@@ -1,0 +1,25 @@
+/* Shared styles for dashboard pages */
+:host { display: block; }
+.head { display: flex; justify-content: space-between; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
+.head h1 { font-size: clamp(24px, 3.5vw, 32px); }
+.head p { color: var(--muted); margin-top: 6px; }
+.panel { background: #fff; border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 18px; }
+.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.panel-head h2 { font-size: 17px; }
+.panel-body { padding: 20px; }
+.filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.filters .select, .filters .input { height: 40px; width: auto; min-width: 150px; }
+.cols { display: grid; gap: 18px; }
+@media (min-width: 1100px) { .cols.two { grid-template-columns: 1.3fr 1fr; } }
+.who b { display: block; }
+.who small { color: var(--muted); font-size: 12.5px; }
+.proof-thumb { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; border: 1px solid var(--line); cursor: zoom-in; }
+.bars { display: flex; align-items: flex-end; gap: 8px; height: 180px; padding-top: 10px; }
+.bar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; min-width: 0; }
+.bar i { width: 100%; max-width: 46px; border-radius: 8px 8px 3px 3px; background: linear-gradient(to top, var(--court), var(--lime)); min-height: 4px; transition: height .6s var(--ease); }
+.bar small { font-size: 11px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.bar em { font-style: normal; font-size: 11px; font-weight: 800; color: var(--forest); }
+.qr-box { width: 180px; height: 180px; border-radius: 18px; border: 2px dashed var(--line); display: grid; place-items: center; overflow: hidden; background: var(--mint); text-align: center; color: var(--muted); font-size: 13px; }
+.qr-box img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+.file-btn { position: relative; overflow: hidden; }
+.file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }

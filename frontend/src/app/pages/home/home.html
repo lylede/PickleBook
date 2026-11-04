@@ -1,0 +1,252 @@
+<!-- ============ 3D HERO (scroll to explode the paddle) ============ -->
+<section class="hero" #hero>
+  <div class="stage" #stage>
+    <div class="bg">
+      <div class="glow g1"></div>
+      <div class="glow g2"></div>
+      <div class="court-floor"><div class="lines"></div></div>
+      <div class="grain"></div>
+    </div>
+
+    <div class="canvas-host" #host aria-label="Interactive 3D pickleball paddle. Drag to rotate, scroll to explode." role="img"></div>
+
+    @if (webglFailed()) {
+      <div class="fallback"><div class="fallback-paddle"><span>PB</span></div></div>
+    }
+
+    <svg class="leaders" aria-hidden="true">
+      @for (p of parts; track p.name) { <path #line d="" /> }
+    </svg>
+
+    <!-- Intro copy -->
+    <div class="copy-wrap">
+      <div class="intro">
+        <span class="pill"><i></i> Now booking in Cebu &amp; Mandaue</span>
+        <h1>Book the court.<br><em>Skip the chat.</em></h1>
+        <p class="lead">See live availability for pickleball courts near you, reserve your slot in seconds and pay with GCash. No more waiting for a reply.</p>
+        <div class="cta">
+          <a routerLink="/courts" class="btn btn-lime btn-lg">Find a court <span aria-hidden="true">→</span></a>
+          <button class="btn btn-ghost-light btn-lg" (click)="scrollToLayers()">See how it's built</button>
+        </div>
+        <div class="trust">
+          <div><b>24/7</b><span>online booking</span></div>
+          <div><b>0</b><span>double bookings</span></div>
+          <div><b>GCash</b><span>QR payments</span></div>
+        </div>
+      </div>
+
+      <div class="layers-title">
+        <span class="eyebrow light">Built in layers</span>
+        <h2>Every layer engineered.<br>Every booking handled.</h2>
+        <p>Like a pro carbon paddle, PickleBook is built from layers that work together. Hover a layer or keep scrolling.</p>
+      </div>
+    </div>
+
+    <!-- Desktop labels (like an exploded diagram) -->
+    <ol class="labels">
+      @for (p of parts; track p.name; let i = $index) {
+        <li #label>
+          <span class="num">{{ (i + 1).toString().padStart(2, '0') }}</span>
+          <div>
+            <small>{{ p.name }}</small>
+            <b>{{ p.feature }}</b>
+            <p>{{ p.desc }}</p>
+          </div>
+        </li>
+      }
+    </ol>
+
+    <!-- Mobile: one card that follows the highlighted layer -->
+    <div class="mobile-card" #mobileCard>
+      <span class="mc-num">01</span>
+      <div>
+        <small class="mc-name">{{ parts[0].name }}</small>
+        <b class="mc-feature">{{ parts[0].feature }}</b>
+        <p class="mc-desc">{{ parts[0].desc }}</p>
+      </div>
+    </div>
+
+    <div class="scroll-hint"><span class="mouse"><i></i></span> Scroll to take it apart · drag to spin</div>
+  </div>
+</section>
+
+<!-- ============ OLD WAY vs PICKLEBOOK ============ -->
+<section class="section why" id="why">
+  <div class="container why-grid">
+    <div class="why-copy">
+      <span class="eyebrow">The problem</span>
+      <h2>Booking a court shouldn't take twelve messages.</h2>
+      <p class="muted">Most courts still take reservations through Messenger, calls and paper logs. Players wait for replies, owners juggle schedules, and double bookings happen on busy weekends.</p>
+      <ul class="checks">
+        <li>Real-time schedules for every court</li>
+        <li>Instant reservation with a booking reference</li>
+        <li>Pay through the court's own GCash QR</li>
+      </ul>
+    </div>
+
+    <div class="compare">
+      <div class="phone old">
+        <div class="phone-head"><span class="avatar">CT</span><div><b>Court Tambayan</b><small>Active 3h ago</small></div></div>
+        <div class="bubble me">Hi po! Available pa court this Sat 7PM?</div>
+        <div class="bubble me">For 4 players po</div>
+        <div class="bubble them">Wait lang po, check ko</div>
+        <div class="time">2 hours later</div>
+        <div class="bubble them">Sorry po fully booked na 😅</div>
+        <span class="tag bad">The old way</span>
+      </div>
+
+      <div class="phone new">
+        <div class="slot-head"><b>Dink Yard Cebu</b><small>Sat, Nov 8 · Court 2</small></div>
+        <div class="slot-grid">
+          <span class="s off">5 PM</span><span class="s off">6 PM</span><span class="s pick">7 PM</span>
+          <span class="s pick">8 PM</span><span class="s">9 PM</span><span class="s off">10 PM</span>
+        </div>
+        <div class="slot-total"><span>2 hours</span><b>₱800</b></div>
+        <div class="slot-btn">Reserved ✓ PB-7K3Q9A</div>
+        <span class="tag good">With PickleBook · 20 seconds</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section class="section how" id="how">
+  <div class="container">
+    <div class="center-head">
+      <span class="eyebrow">How it works</span>
+      <h2>From couch to court in four steps</h2>
+    </div>
+    <ol class="steps">
+      <li>
+        <span class="step-num">1</span>
+        <div class="step-icon">⌕</div>
+        <h3>Find a court</h3>
+        <p>Browse partner facilities, compare rates and opening hours.</p>
+      </li>
+      <li>
+        <span class="step-num">2</span>
+        <div class="step-icon">▦</div>
+        <h3>Pick your time</h3>
+        <p>Tap open slots on the live schedule. Booked hours are greyed out.</p>
+      </li>
+      <li>
+        <span class="step-num">3</span>
+        <div class="step-icon qr"><i></i><i></i><i></i><i></i></div>
+        <h3>Scan &amp; pay</h3>
+        <p>Scan the court's GCash QR, then upload your receipt and reference number.</p>
+      </li>
+      <li>
+        <span class="step-num">4</span>
+        <div class="step-icon">✓</div>
+        <h3>Play</h3>
+        <p>The owner confirms your payment and your slot is locked in.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============ FEATURED COURTS ============ -->
+@if (featured().length) {
+  <section class="section featured">
+    <div class="container">
+      <div class="row-head">
+        <div>
+          <span class="eyebrow">Partner courts</span>
+          <h2>Play near you</h2>
+        </div>
+        <a routerLink="/courts" class="btn btn-outline">See all courts →</a>
+      </div>
+      <div class="fac-grid">
+        @for (f of featured(); track f.id) {
+          <a class="fac-card" [routerLink]="['/courts', f.id]">
+            <div class="fac-art"><div class="mini-court"></div><span class="badge-rate">from {{ f.min_rate | peso }}/hr</span></div>
+            <div class="fac-body">
+              <h3>{{ f.name }}</h3>
+              <p class="muted">{{ f.address }}, {{ f.city }}</p>
+              <div class="fac-meta">
+                <span>{{ f.court_count }} courts</span>
+                <span>{{ f.open_hour | hour }} – {{ f.close_hour | hour }}</span>
+                @for (s of surfaces(f); track s) { <span class="cap">{{ s }}</span> }
+              </div>
+            </div>
+          </a>
+        }
+      </div>
+    </div>
+  </section>
+}
+
+<!-- ============ FOR COURT OWNERS ============ -->
+<section class="section owners" id="owners">
+  <div class="container owners-grid">
+    <div>
+      <span class="eyebrow light">For court owners</span>
+      <h2>Run your courts, not your inbox.</h2>
+      <p class="lead-light">Stop answering “available pa?” all day. PickleBook gives you one dashboard for schedules, reservations and GCash payments.</p>
+      <ul class="owner-points">
+        <li><b>Fewer repetitive messages</b><span>Players see rates and open slots before they ask.</span></li>
+        <li><b>No more double bookings</b><span>Slots lock the moment they are reserved.</span></li>
+        <li><b>Verify GCash in one tap</b><span>See the receipt and reference number, then confirm.</span></li>
+        <li><b>Know your peak hours</b><span>Booking reports show your busiest days and times.</span></li>
+      </ul>
+      <a routerLink="/register" [queryParams]="{ as: 'owner' }" class="btn btn-lime btn-lg">List your facility</a>
+    </div>
+
+    <div class="dash-mock">
+      <div class="dm-top"><span></span><span></span><span></span><b>Owner dashboard</b></div>
+      <div class="dm-stats">
+        <div><small>Today</small><b>14</b><em>bookings</em></div>
+        <div><small>To verify</small><b>3</b><em>GCash</em></div>
+        <div class="hl"><small>This month</small><b>₱48.6k</b><em>revenue</em></div>
+      </div>
+      <div class="dm-chart">
+        @for (h of [30, 45, 38, 60, 72, 95, 88]; track $index) { <i [style.height.%]="h"></i> }
+      </div>
+      <div class="dm-row"><span class="badge for_verification">Verifying</span><b>Court 2 · 7–9 PM</b><button>Confirm</button></div>
+      <div class="dm-row"><span class="badge confirmed">Confirmed</span><b>Center Court · 6–7 PM</b><em>₱550</em></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PRICING ============ -->
+<section class="section pricing" id="pricing">
+  <div class="container">
+    <div class="center-head">
+      <span class="eyebrow">Pricing for facilities</span>
+      <h2>Simple monthly plans</h2>
+      <p class="muted">Players book for free. Facilities pay a small monthly subscription.</p>
+    </div>
+    <div class="plans">
+      <div class="plan">
+        <h3>Starter</h3>
+        <div class="price">₱499<span>/month</span></div>
+        <ul><li>Up to 2 courts</li><li>Online booking page</li><li>GCash QR payments</li><li>Schedule &amp; slot blocking</li></ul>
+        <a routerLink="/register" [queryParams]="{ as: 'owner' }" class="btn btn-outline btn-block">Start with Starter</a>
+      </div>
+      <div class="plan popular">
+        <span class="ribbon">Most popular</span>
+        <h3>Pro</h3>
+        <div class="price">₱999<span>/month</span></div>
+        <ul><li>Up to 6 courts</li><li>Everything in Starter</li><li>Booking reports &amp; peak hours</li><li>Customer management</li></ul>
+        <a routerLink="/register" [queryParams]="{ as: 'owner' }" class="btn btn-lime btn-block">Go Pro</a>
+      </div>
+      <div class="plan">
+        <h3>Club</h3>
+        <div class="price">₱1,999<span>/month</span></div>
+        <ul><li>Unlimited courts</li><li>Everything in Pro</li><li>Promoted listing</li><li>Priority support</li></ul>
+        <a routerLink="/register" [queryParams]="{ as: 'owner' }" class="btn btn-outline btn-block">Choose Club</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section class="cta-band">
+  <div class="container cta-inner">
+    <h2>Your next game is three taps away.</h2>
+    <div class="cta">
+      <a routerLink="/courts" class="btn btn-lime btn-lg">Book a court</a>
+      @if (!auth.isLoggedIn()) { <a routerLink="/register" class="btn btn-ghost-light btn-lg">Create free account</a> }
+    </div>
+  </div>
+</section>

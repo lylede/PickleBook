@@ -1,0 +1,66 @@
+:host { display: block; }
+.auth { min-height: 100svh; display: grid; background: var(--mint); }
+
+.visual {
+  display: none; position: relative; overflow: hidden; color: #fff; padding: 48px;
+  background: radial-gradient(700px 400px at 70% 10%, rgba(190, 242, 100, .25), transparent 60%), linear-gradient(160deg, var(--night), var(--forest));
+}
+.visual .court {
+  position: absolute; left: 50%; bottom: -30%; width: 620px; height: 1000px; margin-left: -310px;
+  transform: perspective(800px) rotateX(64deg); transform-origin: 50% 100%;
+  border: 3px solid rgba(190, 242, 100, .35);
+  background:
+    linear-gradient(rgba(190,242,100,.35), rgba(190,242,100,.35)) 50% 0 / 3px 100% no-repeat,
+    linear-gradient(rgba(190,242,100,.35), rgba(190,242,100,.35)) 0 36% / 100% 3px no-repeat,
+    linear-gradient(rgba(190,242,100,.35), rgba(190,242,100,.35)) 0 64% / 100% 3px no-repeat,
+    linear-gradient(var(--lime), var(--lime)) 0 50% / 100% 6px no-repeat,
+    rgba(21, 128, 61, .2);
+}
+.visual .ball { position: absolute; width: 74px; height: 74px; border-radius: 50%; right: 18%; top: 42%;
+  background: radial-gradient(circle at 30% 30%, #f0ff9c, var(--ball) 45%, #9fbf1f); box-shadow: 0 30px 60px -10px rgba(190, 242, 100, .5);
+  animation: bob 3s ease-in-out infinite; }
+.visual .ball::after { content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(circle, rgba(4,20,13,.35) 3px, transparent 4px) 0 0 / 18px 18px; opacity: .6; }
+.visual-copy { position: relative; z-index: 1; max-width: 420px; margin-top: 80px; }
+.visual-copy h2 { font-size: 40px; margin: 14px 0; }
+.visual-copy h2 em { font-style: normal; color: var(--lime); }
+.visual-copy p { color: rgba(255, 255, 255, .7); }
+.quote { position: absolute; z-index: 1; left: 48px; right: 48px; bottom: 48px; padding: 18px 20px; border-radius: 18px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(10px); font-size: 14px; color: rgba(255,255,255,.82); }
+.quote b { display: block; margin-top: 8px; color: var(--lime); font-size: 13px; }
+
+.panel { display: flex; align-items: center; justify-content: center; padding: calc(var(--nav-h) + 24px) 20px 40px; }
+.form-card { width: 100%; max-width: 440px; }
+.form-card h1 { font-size: clamp(26px, 6vw, 34px); margin-bottom: 8px; }
+.form-card .sub { color: var(--muted); margin-bottom: 28px; }
+.form-card .sub a, .switch a { color: var(--court); font-weight: 700; }
+.switch { text-align: center; margin-top: 22px; color: var(--muted); font-size: 14.5px; }
+
+.pw-wrap { position: relative; }
+.pw-wrap .input { padding-right: 64px; }
+.pw-toggle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); border: 0; background: none; font-size: 13px; font-weight: 700; color: var(--court); padding: 6px 8px; }
+
+.demo { margin-top: 22px; padding: 14px 16px; border-radius: 14px; background: #fff; border: 1px dashed var(--line); font-size: 13px; color: var(--muted); }
+.demo b { color: var(--ink); }
+.demo-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+
+.roles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 22px; }
+.role { text-align: left; padding: 14px; border-radius: 16px; border: 2px solid var(--line); background: #fff; transition: border-color .2s, box-shadow .2s, transform .2s; }
+.role:hover { transform: translateY(-2px); }
+.role .ico { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; background: var(--mint-2); color: var(--court); font-size: 18px; margin-bottom: 10px; }
+.role b { display: block; font-size: 15px; }
+.role span { font-size: 12.5px; color: var(--muted); }
+.role.active { border-color: var(--court); box-shadow: 0 0 0 4px rgba(34, 197, 94, .14); }
+.role.active .ico { background: var(--court); color: #fff; }
+
+.owner-fields { padding: 16px; margin-bottom: 16px; border-radius: 16px; background: #fff; border: 1px solid var(--line); animation: pop .3s var(--ease); }
+.owner-fields h4 { font-family: var(--font-body); font-size: 13px; text-transform: uppercase; letter-spacing: .1em; color: var(--court); margin-bottom: 12px; }
+.strength { height: 4px; border-radius: 4px; background: var(--line); margin-top: 8px; overflow: hidden; }
+.strength i { display: block; height: 100%; border-radius: 4px; transition: width .3s, background .3s; }
+.terms { font-size: 12.5px; color: var(--muted); margin: 4px 0 18px; }
+
+@media (min-width: 960px) {
+  .auth { grid-template-columns: 1.05fr 1fr; }
+  .visual { display: block; }
+  .panel { padding-top: calc(var(--nav-h) + 24px); }
+}
+@keyframes bob { 50% { transform: translateY(-18px); } }
