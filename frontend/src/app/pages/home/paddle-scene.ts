@@ -461,7 +461,7 @@ interface Part {
   glow: number;
 }
 
-interface Layout { aPos: THREE.Vector3; aScale: number; ePos: THREE.Vector3; eScale: number; courtX: number; }
+interface Layout { aPos: THREE.Vector3; aScale: number; ePos: THREE.Vector3; eScale: number; courtX: number; ball: [number, number]; }
 
 // ================================================================ scene
 export class PaddleScene {
@@ -798,13 +798,16 @@ export class PaddleScene {
     const aspect = w / h;
     if (aspect >= 1.15) {
       // Desktop: paddle on the right, exploded view moves left to make room for labels
-      this.layout = { aPos: new THREE.Vector3(2.35, -0.1, 0), aScale: 1.08, ePos: new THREE.Vector3(-0.15, -0.25, 0), eScale: 0.55, courtX: 0 };
-    } else if (aspect >= 0.75) {
+      this.layout = { aPos: new THREE.Vector3(2.35, -0.1, 0), aScale: 1.08, ePos: new THREE.Vector3(-0.15, -0.25, 0), eScale: 0.55, courtX: 0, ball: [-1.05, -0.2] };
+    } else if (aspect >= 0.75 && w >= 640) {
       // Tablet
-      this.layout = { aPos: new THREE.Vector3(1.25, -0.5, 0), aScale: 0.86, ePos: new THREE.Vector3(-0.6, -0.2, 0), eScale: 0.48, courtX: -1 };
+      this.layout = { aPos: new THREE.Vector3(1.25, -0.5, 0), aScale: 0.86, ePos: new THREE.Vector3(-0.6, -0.2, 0), eScale: 0.48, courtX: -1, ball: [-1.05, -0.2] };
     } else {
-      // Phone: paddle sits below the headline, exploded view is centered
-      this.layout = { aPos: new THREE.Vector3(0.3, -1.6, 0), aScale: 0.52, ePos: new THREE.Vector3(0, 0.05, 0), eScale: 0.42, courtX: 1.0 };
+      // Phone: a big centered paddle behind the headline (the page shades it so the text stays readable)
+      const visH = 2 * this.camera.position.z * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
+      const visW = visH * aspect;
+      const size = Math.min(1.05, (0.8 * visH) / 4.75, (0.62 * visW) / W);
+      this.layout = { aPos: new THREE.Vector3(0, -0.12, 0), aScale: size, ePos: new THREE.Vector3(0, 0.05, 0), eScale: 0.42, courtX: 1.0, ball: [1.1, 0.2] };
     }
     if (!this.running) this.tick(0);
   }
@@ -896,8 +899,7 @@ export class PaddleScene {
     // Ball bounces on the court beside the paddle, and rolls away when the parts separate
     const ballOut = clamp01(e * 2.2);
     const bounce = still ? 0.6 : Math.abs(Math.sin(this.time * 2.1));
-    const side = L.aPos.x > 1 ? -1.05 : -1.15;
-    this.tmp.set(L.aPos.x + side * L.aScale, L.aPos.y + (L.aPos.x > 1 ? -0.2 : 1.4) * L.aScale, 1.0);
+    this.tmp.set(L.aPos.x + L.ball[0] * L.aScale, L.aPos.y + L.ball[1] * L.aScale, 1.0);
     this.court.worldToLocal(this.tmp);
     this.tmp.x -= ballOut * 4;
     const r = 0.285 * L.aScale;

@@ -17,7 +17,7 @@
 .canvas-host::after {
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(6, 30, 21, 0.88) 0%, rgba(6, 30, 21, 0.55) 42%, rgba(6, 30, 21, 0) 68%),
+    linear-gradient(180deg, rgba(6, 30, 21, 0.86) 0%, rgba(6, 30, 21, 0.66) 48%, rgba(6, 30, 21, 0.2) 70%, rgba(6, 30, 21, 0) 82%),
     linear-gradient(0deg, rgba(6, 30, 21, calc(0.8 * var(--layers))) 0%, rgba(6, 30, 21, 0) 40%);
 }
 @media (min-width: 992px) {
@@ -45,6 +45,7 @@
 .intro h1 { color: #fff; font-size: clamp(1.9rem, 8.4vw, 3.5rem); line-height: 1.05; letter-spacing: -0.035em; margin-bottom: 0.9rem; max-width: 13ch; }
 .intro .lead { color: rgba(255, 255, 255, 0.78); font-size: 1rem; font-weight: 400; max-width: 30rem; margin-bottom: 1.25rem; }
 .intro .cta { pointer-events: auto; }
+.intro h1, .intro .lead, .intro .kicker { text-shadow: 0 2px 18px rgba(4, 22, 15, 0.55); }
 .stage.exploded .intro .cta { pointer-events: none; }
 
 .layers-title {
