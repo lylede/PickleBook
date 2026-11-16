@@ -19,7 +19,7 @@ export const PADDLE_PARTS: PaddlePartInfo[] = [
   { name: 'Honeycomb core', feature: 'No double bookings', desc: 'A slot is locked the moment someone reserves it.' },
   { name: 'Carbon back', feature: 'Secure accounts', desc: 'Separate access for players, court owners and admins.' },
   { name: 'Edge guard', feature: 'GCash payments', desc: 'Scan the facility QR, then upload your receipt.' },
-  { name: 'Throat', feature: 'Owner dashboard', desc: 'Verify payments and manage courts in one place.' },
+  { name: 'Throat ring', feature: 'Owner dashboard', desc: 'Verify payments and manage courts in one place.' },
   { name: 'Grip', feature: 'My bookings', desc: 'Track every reservation and its status.' },
   { name: 'Handle core', feature: 'Admin approval', desc: 'Facilities are reviewed before they go live.' },
   { name: 'Butt cap', feature: 'Reports', desc: 'Revenue and peak hours for each facility.' },
@@ -29,12 +29,12 @@ export interface ScreenAnchor { x: number; y: number; }
 
 // ---------------------------------------------------------------- dimensions
 // 1 unit = 3.9 in. Head is centered on its own origin.
-const W = 1.9;                 // face width  (7.4 in)
-const HEAD_H = 2.89;           // head length incl. shoulders (11.25 in)
+const W = 1.84;                // face width  (7.2 in)
+const HEAD_H = 3.12;           // head length incl. the tapered throat (12.2 in)
 const HALF_H = HEAD_H / 2;
-const NECK_W = 0.2;            // half width of the neck
-const HANDLE_LEN = 1.36;       // 5.25 in
-const HEAD_Y = 0.68;           // head center in paddle space
+const NECK_W = 0.1;            // half width where the throat meets the handle (edge guard included, it stays inside the grip)
+const HANDLE_LEN = 1.5;        // 5.75 in
+const HEAD_Y = 0.78;           // head center in paddle space
 const NECK_Y = HEAD_Y - HALF_H; // where head meets handle
 
 const CORE_T = 0.118;          // honeycomb core
@@ -45,18 +45,21 @@ const GUARD_T = 0.176;         // edge guard
 // ---------------------------------------------------------------- outline
 /** Paddle head outline: rounded top, straight sides, shoulders flowing into the neck. */
 function headPath(): THREE.Shape {
+  // One continuous outline: rounded tip, long straight sides, then a long
+  // smooth taper that becomes the throat, so the face flows into the handle.
   const hw = W / 2;
+  const y0 = -HALF_H;               // bottom of the throat
   const s = new THREE.Shape();
-  s.moveTo(NECK_W, -HALF_H);
-  s.bezierCurveTo(NECK_W + 0.015, -HALF_H + 0.2, 0.36, -HALF_H + 0.3, 0.55, -HALF_H + 0.36); // concave fillet
-  s.bezierCurveTo(0.8, -HALF_H + 0.44, hw, -HALF_H + 0.62, hw, -HALF_H + 0.95);              // shoulder
-  s.lineTo(hw, HALF_H - 0.58);
-  s.bezierCurveTo(hw, HALF_H - 0.2, hw - 0.24, HALF_H - 0.012, hw - 0.56, HALF_H - 0.004);    // top corner
-  s.bezierCurveTo(0.14, HALF_H + 0.012, -0.14, HALF_H + 0.012, -(hw - 0.56), HALF_H - 0.004); // slight crown
-  s.bezierCurveTo(-(hw - 0.24), HALF_H - 0.012, -hw, HALF_H - 0.2, -hw, HALF_H - 0.58);
-  s.lineTo(-hw, -HALF_H + 0.95);
-  s.bezierCurveTo(-hw, -HALF_H + 0.62, -0.8, -HALF_H + 0.44, -0.55, -HALF_H + 0.36);
-  s.bezierCurveTo(-0.36, -HALF_H + 0.3, -(NECK_W + 0.015), -HALF_H + 0.2, -NECK_W, -HALF_H);
+  s.moveTo(NECK_W, y0);
+  s.bezierCurveTo(NECK_W + 0.01, y0 + 0.24, 0.27, y0 + 0.46, 0.43, y0 + 0.62);   // concave flare out of the handle
+  s.bezierCurveTo(0.66, y0 + 0.84, hw - 0.01, y0 + 1.02, hw, y0 + 1.42);          // shoulder into the side
+  s.lineTo(hw, HALF_H - 0.62);
+  s.bezierCurveTo(hw, HALF_H - 0.22, hw - 0.26, HALF_H - 0.01, hw - 0.58, HALF_H);   // rounded tip corner
+  s.bezierCurveTo(0.12, HALF_H + 0.014, -0.12, HALF_H + 0.014, -(hw - 0.58), HALF_H);
+  s.bezierCurveTo(-(hw - 0.26), HALF_H - 0.01, -hw, HALF_H - 0.22, -hw, HALF_H - 0.62);
+  s.lineTo(-hw, y0 + 1.42);
+  s.bezierCurveTo(-(hw - 0.01), y0 + 1.02, -0.66, y0 + 0.84, -0.43, y0 + 0.62);
+  s.bezierCurveTo(-0.27, y0 + 0.46, -(NECK_W + 0.01), y0 + 0.24, -NECK_W, y0);
   s.closePath();
   return s;
 }
@@ -134,19 +137,6 @@ function edgeGuardShape(): THREE.Shape {
 }
 
 /** Molded collar where the head meets the handle. Origin sits on the neck line. */
-function throatShape(): THREE.Shape {
-  const s = new THREE.Shape();
-  s.moveTo(-0.212, -0.2);
-  s.lineTo(0.212, -0.2);
-  s.lineTo(0.222, 0.0);
-  s.bezierCurveTo(0.25, 0.19, 0.38, 0.27, 0.53, 0.325);
-  s.lineTo(0.5, 0.4);
-  s.bezierCurveTo(0.3, 0.3, -0.3, 0.3, -0.5, 0.4);
-  s.lineTo(-0.53, 0.325);
-  s.bezierCurveTo(-0.38, 0.27, -0.25, 0.19, -0.222, 0.0);
-  s.closePath();
-  return s;
-}
 
 function extrude(shape: THREE.Shape, depth: number, bevel = 0, curveSegments = 12): THREE.ExtrudeGeometry {
   const g = new THREE.ExtrudeGeometry(shape, {
@@ -163,7 +153,7 @@ function extrude(shape: THREE.Shape, depth: number, bevel = 0, curveSegments = 1
  */
 function shapeHandle(g: THREE.BufferGeometry, sx: number, sz: number, len = 1, wraps = 0, flare = 0): THREE.BufferGeometry {
   const pos = g.attributes['position'] as THREE.BufferAttribute;
-  const power = 3.2;
+  const power = 2.35;            // 2 = oval, higher = squarer. Kept low for a round, comfortable grip
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
     const r = Math.hypot(x, z);
@@ -174,7 +164,7 @@ function shapeHandle(g: THREE.BufferGeometry, sx: number, sz: number, len = 1, w
     let k = squarish * (1 + flare * (1 - t) * (1 - t));
     if (wraps > 0 && r > 0.98) {
       const phase = (((Math.atan2(z, x) / (Math.PI * 2) + t * wraps) % 1) + 1) % 1;
-      k *= 1 + 0.026 * phase;                      // tape overlap: ramps up, then steps down
+      k *= 1 + 0.045 * Math.pow(phase, 1.5);       // tape overlap: ramps up, then steps down
     }
     pos.setXYZ(i, c * r * sx * k, y, s * r * sz * k);
   }
@@ -293,10 +283,10 @@ function printTexture(): HTMLCanvasElement {
   g.restore();
 
   // model badge near the throat
-  drawMark(g, w / 2 - 92, h * 0.83, 46, 'rgba(255,255,255,0.95)', '#18a05a');
+  drawMark(g, w / 2 - 92, h * 0.745, 46, 'rgba(255,255,255,0.95)', '#18a05a');
   g.fillStyle = '#ffffff';
   g.font = `800 58px ${FONT}`;
-  g.fillText('PRO', w / 2 + 34, h * 0.83 + 2);
+  g.fillText('PRO', w / 2 + 34, h * 0.745 + 2);
   return c;
 }
 
@@ -313,41 +303,38 @@ function backMarkTexture(): HTMLCanvasElement {
   return c;
 }
 
+/** Black perforated overgrip: small punched holes in staggered rows. */
 function gripTexture(): HTMLCanvasElement {
   const [c, g] = canvas(512, 1024);
-  g.fillStyle = '#eef0ec';
+  g.fillStyle = '#121413';
   g.fillRect(0, 0, 512, 1024);
-  g.fillStyle = 'rgba(20, 30, 25, 0.16)';
-  for (let y = 7, j = 0; y < 1024; y += 13, j++) {
-    for (let x = j % 2 ? 6 : 12.5; x < 512; x += 13) { g.beginPath(); g.arc(x, y, 2.1, 0, Math.PI * 2); g.fill(); }
-  }
-  // printed wordmark bands, the way grip tape is branded
-  g.fillStyle = '#0b3d2a';
-  g.font = `800 40px ${FONT}`;
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
-  for (const y of [180, 540, 900]) {
-    g.save(); g.translate(256, y); g.rotate(-0.18); g.fillText('PICKLEBOOK', 0, 0); g.restore();
+  for (let y = 10, j = 0; y < 1024; y += 20, j++) {
+    for (let x = j % 2 ? 10 : 20; x < 512; x += 20) {
+      g.fillStyle = 'rgba(255,255,255,0.10)';          // lit lower rim of the hole
+      g.beginPath(); g.arc(x, y + 0.8, 3.6, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#030303';                          // the hole
+      g.beginPath(); g.arc(x, y, 3.1, 0, Math.PI * 2); g.fill();
+    }
   }
   return c;
 }
 
 function gripBump(): HTMLCanvasElement {
   const [c, g] = canvas(512, 1024);
-  g.fillStyle = '#808080';
+  g.fillStyle = '#9a9a9a';
   g.fillRect(0, 0, 512, 1024);
-  g.fillStyle = '#303030';
-  for (let y = 7, j = 0; y < 1024; y += 13, j++) {
-    for (let x = j % 2 ? 6 : 12.5; x < 512; x += 13) { g.beginPath(); g.arc(x, y, 2.4, 0, Math.PI * 2); g.fill(); }
+  g.fillStyle = '#101010';
+  for (let y = 10, j = 0; y < 1024; y += 20, j++) {
+    for (let x = j % 2 ? 10 : 20; x < 512; x += 20) { g.beginPath(); g.arc(x, y, 3.3, 0, Math.PI * 2); g.fill(); }
   }
   return c;
 }
 
 function capTexture(): HTMLCanvasElement {
   const [c, g] = canvas(256, 256);
-  g.fillStyle = '#eef0ec';
+  g.fillStyle = '#141716';
   g.fillRect(0, 0, 256, 256);
-  drawMark(g, 128, 128, 150, '#0b3d2a', '#8fbf1f');
+  drawMark(g, 128, 128, 150, '#c6e84a', '#141716');
   return c;
 }
 
@@ -381,6 +368,84 @@ function shadowTexture(): HTMLCanvasElement {
   return c;
 }
 
+// ---------------------------------------------------------------- court
+// A close-up of a tournament court: blue playing area, green surround, 2 in white lines.
+// The floor is a COURT_SIZE square in its own plane (x right, y away from the viewer).
+const COURT_SIZE = 44;
+const FT = 12 / 3.9;            // scene units per foot
+const LINE_W = 2 / 3.9;         // 2 in line
+const SIDELINE_X = -2.2;        // left edge of the playing area (green outside it)
+const KITCHEN_Y = 3.4;          // non-volley line
+const COURT_TILT = 0.78;        // floor tilted toward the viewer so it fills the frame
+
+function courtTexture(): HTMLCanvasElement {
+  const S = 1536, U = S / COURT_SIZE;
+  const px = (x: number) => (x + COURT_SIZE / 2) * U;
+  const py = (y: number) => (COURT_SIZE / 2 - y) * U;
+  const [c, g] = canvas(S, S);
+
+  g.fillStyle = '#245692';                                   // playing area
+  g.fillRect(0, 0, S, S);
+  g.fillStyle = '#1f6a45';                                   // surround
+  g.fillRect(0, 0, px(SIDELINE_X), S);
+
+  // Acrylic sand texture: fine speckle plus a few broad trowel marks
+  const img = g.getImageData(0, 0, S, S);
+  const d = img.data;
+  let seed = 7;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < d.length; i += 4) {
+    const n = (rnd() - 0.5) * 22;
+    d[i] += n; d[i + 1] += n; d[i + 2] += n;
+  }
+  g.putImageData(img, 0, 0);
+  for (let i = 0; i < 26; i++) {
+    const grad = g.createRadialGradient(rnd() * S, rnd() * S, 0, rnd() * S, rnd() * S, 120 + rnd() * 260);
+    const a = 0.025 + rnd() * 0.03;
+    grad.addColorStop(0, rnd() > 0.5 ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${a * 1.4})`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, S, S);
+  }
+
+  // Lines: the sideline, and the kitchen line running in from it
+  g.fillStyle = '#eef2ee';
+  const lw = LINE_W * U;
+  g.fillRect(px(SIDELINE_X) - lw / 2, 0, lw, S);
+  g.fillRect(px(SIDELINE_X) - lw / 2, py(KITCHEN_Y) - lw / 2, S, lw);
+  // Centre line from the kitchen line back toward the baseline (10 ft in from the sideline)
+  g.fillRect(px(SIDELINE_X + 10 * FT) - lw / 2, py(KITCHEN_Y), lw, S);
+
+  // Soft focus, like a photo taken close to the floor
+  const [b, bg] = canvas(S, S);
+  bg.filter = 'blur(1.6px)';
+  bg.drawImage(c, 0, 0);
+  return bg.filter === 'blur(1.6px)' ? b : c;
+}
+
+/** Blurred paddle silhouette used as its shadow on the court. Covers x -1.4..1.4, y -2.8..2.8 (paddle space). */
+function paddleShadowTexture(): HTMLCanvasElement {
+  const Wc = 256, Hc = 512, k = Wc / 2.8;
+  const [c, g] = canvas(Wc, Hc);
+  const tx = (x: number) => Wc / 2 + x * k;
+  const ty = (y: number) => Hc / 2 - (y - 0.03) * k;
+  // Draw the shape off-canvas and keep only its blurred shadow
+  const off = 2000;
+  g.shadowColor = 'rgba(0,0,0,0.85)';
+  g.shadowBlur = 22;
+  g.shadowOffsetX = off;
+  g.fillStyle = '#000';
+  g.beginPath();
+  outline().forEach((p, i) => {
+    const x = tx(p.x) - off, y = ty(p.y + HEAD_Y);
+    if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+  });
+  g.closePath();
+  g.fill();
+  g.fillRect(tx(-0.17) - off, ty(NECK_Y), 0.34 * k, (HANDLE_LEN + 0.12) * k);
+  return c;
+}
+
 // ---------------------------------------------------------------- helpers
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
@@ -396,7 +461,7 @@ interface Part {
   glow: number;
 }
 
-interface Layout { aPos: THREE.Vector3; aScale: number; ePos: THREE.Vector3; eScale: number; }
+interface Layout { aPos: THREE.Vector3; aScale: number; ePos: THREE.Vector3; eScale: number; courtX: number; }
 
 // ================================================================ scene
 export class PaddleScene {
@@ -411,6 +476,11 @@ export class PaddleScene {
   private root = new THREE.Group();
   private ball!: THREE.Mesh;
   private shadow!: THREE.Mesh;
+  private ballShadow!: THREE.Mesh;
+  private court = new THREE.Group();
+  private courtNormal = new THREE.Vector3();
+  private lightDir = new THREE.Vector3(-3.5, 5, 7).normalize();
+  private tmp2 = new THREE.Vector3();
   private parts: Part[] = [];
   private pickables: THREE.Object3D[] = [];
   private raycaster = new THREE.Raycaster();
@@ -443,7 +513,7 @@ export class PaddleScene {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.1;
+    this.renderer.toneMappingExposure = 0.95;
     this.renderer.domElement.style.touchAction = 'pan-y';
     host.appendChild(this.renderer.domElement);
 
@@ -464,6 +534,8 @@ export class PaddleScene {
     const fill = new THREE.DirectionalLight(0xa8ffd0, 0.5);
     fill.position.set(4, -4, 4);
     this.scene.add(key, rim, fill);
+    // The far end of the court falls off into the page's dark green
+    this.scene.fog = new THREE.Fog(0x06251a, 13, 32);
 
     this.scene.add(this.root);
     this.build();
@@ -550,16 +622,16 @@ export class PaddleScene {
       map: this.faceTexture(canvasEl), bumpMap: weaveBump, bumpScale: 0.8,
       roughness: 0.55, metalness: 0.15, clearcoat: 0.35, clearcoatRoughness: 0.5,
     });
-    const mSide = () => new THREE.MeshStandardMaterial({ color: 0xe8ece9, roughness: 0.6 });
+    const mSide = () => new THREE.MeshStandardMaterial({ color: 0x1d2320, roughness: 0.6 });
     const mCore = () => new THREE.MeshStandardMaterial({ color: 0xc9cec8, roughness: 0.78 });
-    const mGuard = () => new THREE.MeshPhysicalMaterial({ color: 0xf3f5f3, roughness: 0.38, clearcoat: 0.4, clearcoatRoughness: 0.3 });
-    const mThroat = () => new THREE.MeshPhysicalMaterial({ color: 0xf3f5f3, roughness: 0.32, clearcoat: 0.6, clearcoatRoughness: 0.25 });
+    const mGuard = () => new THREE.MeshPhysicalMaterial({ color: 0x141816, roughness: 0.42, clearcoat: 0.5, clearcoatRoughness: 0.3 });
+    const mThroat = () => new THREE.MeshPhysicalMaterial({ color: 0x1b1f1d, roughness: 0.35, clearcoat: 0.6, clearcoatRoughness: 0.25 });
     const gripMap = this.texture(gripTexture());
     const gripBumpMap = this.texture(gripBump(), false);
-    [gripMap, gripBumpMap].forEach((t) => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(2, 2.4); });
-    const mGrip = () => new THREE.MeshStandardMaterial({ map: gripMap, bumpMap: gripBumpMap, bumpScale: 1.2, roughness: 0.92 });
+    [gripMap, gripBumpMap].forEach((t) => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1.6, 1.8); });
+    const mGrip = () => new THREE.MeshStandardMaterial({ map: gripMap, bumpMap: gripBumpMap, bumpScale: 2, roughness: 0.7 });
     const mHandle = () => new THREE.MeshStandardMaterial({ color: 0x2a2f2c, roughness: 0.75 });
-    const mCap = () => new THREE.MeshStandardMaterial({ color: 0xeef0ec, roughness: 0.5 });
+    const mCap = () => new THREE.MeshPhysicalMaterial({ color: 0x151817, roughness: 0.35, clearcoat: 0.5, clearcoatRoughness: 0.3 });
 
     // ---- part factory
     const tilt = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.92, 0, 0));
@@ -612,36 +684,43 @@ export class PaddleScene {
     // 4 edge guard
     m = [mGuard()];
     add(mesh(extrude(edgeGuardShape(), GUARD_T - 0.036, 0.018, 14), m), m, [0, HEAD_Y, 0], [0, 0.43, 0], tilt, [right + 0.02, 0, 0]);
-    // 5 throat collar
+    // The throat narrows straight into the handle; the grip wraps up over the bottom of it.
+    const gripTop = NECK_Y + 0.1;
+    const gripLen = HANDLE_LEN + 0.06;
+    // 5 throat: thin tapered finishing ring where the grip tape ends
     m = [mThroat()];
-    add(mesh(extrude(throatShape(), 0.176, 0.022, 14), m), m, [0, NECK_Y, 0], [0, -0.78, 0],
-      new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.2, 0, 0)), [0.5, 0.33, 0]);
+    const ringProfile = [
+      new THREE.Vector2(1.0, -0.07), new THREE.Vector2(1.07, -0.05), new THREE.Vector2(1.09, -0.01),
+      new THREE.Vector2(1.08, 0.04), new THREE.Vector2(1.0, 0.07), new THREE.Vector2(0.9, 0.08),
+    ];
+    add(mesh(shapeHandle(new THREE.LatheGeometry(ringProfile, 56), 0.168, 0.144), m), m, [0, gripTop, 0], [0, -0.7, 0],
+      new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.5, 0, 0)), [0.18, 0, 0]);
     // 6 grip wrap
-    const gripLen = HANDLE_LEN - 0.24;
-    const gripGeo = shapeHandle(new THREE.CylinderGeometry(1, 1, gripLen, 72, 120), 0.168, 0.142, gripLen, 9, 0.07);
+    const gripGeo = shapeHandle(new THREE.CylinderGeometry(1, 1, gripLen, 72, 160), 0.168, 0.144, gripLen, 11, 0.16);
     m = [mGrip()];
-    add(mesh(gripGeo, m), m, [0, NECK_Y - 0.2 - gripLen / 2 + 0.01, 0], [0, -1.95, 0], upright, [0.19, 0, 0]);
+    add(mesh(gripGeo, m), m, [0, gripTop - gripLen / 2, 0], [0, -1.75, 0], upright, [0.19, 0, 0]);
     // 7 handle core (hidden inside the grip until exploded)
     const coreLen = gripLen - 0.06;
     m = [mHandle()];
-    add(mesh(shapeHandle(new THREE.CylinderGeometry(1, 1, coreLen, 40, 1), 0.148, 0.122, coreLen), m), m,
-      [0, NECK_Y - 0.2 - gripLen / 2 + 0.01, 0], [0, -3.2, 0], upright, [0.16, 0, 0]);
+    add(mesh(shapeHandle(new THREE.CylinderGeometry(1, 1, coreLen, 40, 1), 0.14, 0.116, coreLen), m), m,
+      [0, gripTop - gripLen / 2, 0], [0, -3.1, 0], upright, [0.16, 0, 0]);
     // 8 butt cap
     const capProfile = [
-      new THREE.Vector2(0.001, -0.07), new THREE.Vector2(0.9, -0.07), new THREE.Vector2(0.99, -0.052), new THREE.Vector2(1.03, -0.02),
-      new THREE.Vector2(1.03, 0.012), new THREE.Vector2(0.97, 0.05), new THREE.Vector2(0.9, 0.07), new THREE.Vector2(0.001, 0.07),
+      new THREE.Vector2(0.001, -0.09), new THREE.Vector2(0.78, -0.09), new THREE.Vector2(0.95, -0.075), new THREE.Vector2(1.05, -0.04),
+      new THREE.Vector2(1.08, 0.0), new THREE.Vector2(1.06, 0.04), new THREE.Vector2(0.98, 0.075), new THREE.Vector2(0.9, 0.09),
+      new THREE.Vector2(0.001, 0.09),
     ];
-    const capGeo = shapeHandle(new THREE.LatheGeometry(capProfile, 56), 0.186, 0.158);
+    const capGeo = shapeHandle(new THREE.LatheGeometry(capProfile, 64), 0.2, 0.172);
     m = [mCap()];
     const cap = mesh(capGeo, m);
     const decal = new THREE.Mesh(
-      new THREE.CircleGeometry(0.105, 40),
+      new THREE.CircleGeometry(0.11, 40),
       new THREE.MeshStandardMaterial({ map: this.texture(capTexture()), roughness: 0.5 }),
     );
     decal.rotation.x = Math.PI / 2;      // faces down, out of the butt
-    decal.position.y = -0.0712;
+    decal.position.y = -0.0915;
     cap.add(decal);
-    add(cap, m, [0, NECK_Y - HANDLE_LEN + 0.06, 0], [0, -4.12, 0],
+    add(cap, m, [0, gripTop - gripLen - 0.06, 0], [0, -4.12, 0],
       new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.62, 0, 0)), [0.2, 0, 0]);
 
     // ---- ball
@@ -651,13 +730,25 @@ export class PaddleScene {
     );
     this.scene.add(this.ball);
 
-    // ---- soft contact shadow
-    this.shadow = new THREE.Mesh(
-      new THREE.PlaneGeometry(2.6, 0.8),
-      new THREE.MeshBasicMaterial({ map: this.texture(shadowTexture(), false), transparent: true, depthWrite: false, opacity: 0.5 }),
+    // ---- court floor
+    const courtMap = this.texture(courtTexture());
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(COURT_SIZE, COURT_SIZE),
+      new THREE.MeshStandardMaterial({ map: courtMap, color: 0x7a8682, roughness: 0.92, metalness: 0, envMapIntensity: 0.2 }),
     );
-    this.shadow.rotation.x = -Math.PI / 2;
-    this.scene.add(this.shadow);
+    this.court.add(floor);
+    this.scene.add(this.court);
+
+    // ---- shadows on the court (paddle silhouette + ball)
+    const shadowMat = (tex: THREE.Texture) => new THREE.MeshBasicMaterial({
+      map: tex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, fog: false,
+    });
+    this.shadow = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 5.6), shadowMat(this.texture(paddleShadowTexture(), false)));
+    this.shadow.position.z = 0.01;
+    this.court.add(this.shadow);
+    this.ballShadow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), shadowMat(this.texture(shadowTexture(), false)));
+    this.ballShadow.position.z = 0.012;
+    this.court.add(this.ballShadow);
   }
 
   // -------------------------------------------------------------- input
@@ -707,13 +798,13 @@ export class PaddleScene {
     const aspect = w / h;
     if (aspect >= 1.15) {
       // Desktop: paddle on the right, exploded view moves left to make room for labels
-      this.layout = { aPos: new THREE.Vector3(2.35, -0.1, 0), aScale: 1.08, ePos: new THREE.Vector3(-0.15, -0.25, 0), eScale: 0.55 };
+      this.layout = { aPos: new THREE.Vector3(2.35, -0.1, 0), aScale: 1.08, ePos: new THREE.Vector3(-0.15, -0.25, 0), eScale: 0.55, courtX: 0 };
     } else if (aspect >= 0.75) {
       // Tablet
-      this.layout = { aPos: new THREE.Vector3(1.25, -0.5, 0), aScale: 0.86, ePos: new THREE.Vector3(-0.6, -0.2, 0), eScale: 0.48 };
+      this.layout = { aPos: new THREE.Vector3(1.25, -0.5, 0), aScale: 0.86, ePos: new THREE.Vector3(-0.6, -0.2, 0), eScale: 0.48, courtX: -1 };
     } else {
       // Phone: paddle sits below the headline, exploded view is centered
-      this.layout = { aPos: new THREE.Vector3(0.1, -1.3, 0), aScale: 0.7, ePos: new THREE.Vector3(0, 0.05, 0), eScale: 0.42 };
+      this.layout = { aPos: new THREE.Vector3(0.3, -1.6, 0), aScale: 0.52, ePos: new THREE.Vector3(0, 0.05, 0), eScale: 0.42, courtX: 1.0 };
     }
     if (!this.running) this.tick(0);
   }
@@ -783,20 +874,47 @@ export class PaddleScene {
       p.materials.forEach((mat) => { mat.emissive.setRGB(0.4 * pulse, 0.7 * pulse, 0.12 * pulse); });
     });
 
-    // Ball bounces beside the assembled paddle and drops away when the parts separate
+    // Court: tilts back and zooms out a little as the paddle comes apart
+    const drift = still ? 0 : 1;
+    this.court.position.set(L.courtX - this.pointerSmooth.x * 0.25 * drift, -2.5 - eEase * 0.6, -2 - eEase * 3);
+    this.court.rotation.set(-Math.PI / 2 + COURT_TILT - eEase * 0.12, 0, 0);
+    this.court.updateMatrixWorld();
+    this.courtNormal.set(0, 0, 1).applyQuaternion(this.court.quaternion);
+
+    // Paddle shadow: cast from the key light onto the court
+    const p = this.root.position;
+    const hDist = this.courtNormal.dot(this.tmp2.copy(p).sub(this.court.position));
+    const sAlong = hDist / Math.max(0.2, this.courtNormal.dot(this.lightDir));
+    this.tmp.copy(p).addScaledVector(this.lightDir, -sAlong);
+    this.court.worldToLocal(this.tmp);
+    this.shadow.position.set(this.tmp.x, this.tmp.y, 0.01);
+    const soft = 1 + hDist * 0.08;
+    this.shadow.scale.set(scale * soft * Math.max(0.3, Math.abs(Math.cos(yaw))), scale * soft * 1.1, 1);
+    this.shadow.rotation.z = (1 - eEase) * 0.2 + 0.15;
+    (this.shadow.material as THREE.MeshBasicMaterial).opacity = 0.38 * (1 - eEase);
+
+    // Ball bounces on the court beside the paddle, and rolls away when the parts separate
     const ballOut = clamp01(e * 2.2);
     const bounce = still ? 0.6 : Math.abs(Math.sin(this.time * 2.1));
-    const side = L.aPos.x > 1 ? -1.55 : 1.05;
-    this.ball.position.set(L.aPos.x + side * L.aScale, L.aPos.y + (-0.35 + bounce * 1.5) * L.aScale - ballOut * 3.2, 1.0);
+    const side = L.aPos.x > 1 ? -1.05 : -1.15;
+    this.tmp.set(L.aPos.x + side * L.aScale, L.aPos.y + (L.aPos.x > 1 ? -0.2 : 1.4) * L.aScale, 1.0);
+    this.court.worldToLocal(this.tmp);
+    this.tmp.x -= ballOut * 4;
+    const r = 0.285 * L.aScale;
+    const lift = r + bounce * 1.25 * L.aScale;
+    this.tmp.z = lift;
+    this.court.localToWorld(this.tmp);
+    this.ball.position.copy(this.tmp);
+    // its shadow falls along the key light, closer and sharper as it lands
+    const ballDist = this.courtNormal.dot(this.tmp2.copy(this.tmp).sub(this.court.position));
+    this.tmp.addScaledVector(this.lightDir, -ballDist / Math.max(0.2, this.courtNormal.dot(this.lightDir)));
+    this.court.worldToLocal(this.tmp);
+    this.ballShadow.position.set(this.tmp.x, this.tmp.y, 0.012);
+    this.ballShadow.scale.setScalar(r * 2.4 * (1 + bounce * 0.8));
+    (this.ballShadow.material as THREE.MeshBasicMaterial).opacity = 0.8 * (1 - bounce * 0.6) * (1 - ballOut);
     this.ball.rotation.x += dt * 2.2;
     this.ball.rotation.z += dt * 0.9;
     this.ball.scale.setScalar(Math.max(0.0001, (1 - ballOut) * L.aScale));
-
-    // Shadow under the paddle
-    const sMat = this.shadow.material as THREE.MeshBasicMaterial;
-    this.shadow.position.set(this.root.position.x, L.aPos.y - 2.42 * L.aScale, 0);
-    this.shadow.scale.setScalar(scale * (1 - float * 1.2));
-    sMat.opacity = 0.5 * (1 - eEase);
 
     this.renderer.render(this.scene, this.camera);
 

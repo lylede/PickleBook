@@ -13,6 +13,21 @@
 .canvas-host { position: absolute; inset: 0; z-index: 1; cursor: grab; }
 .canvas-host.grabbing { cursor: grabbing; }
 :host ::ng-deep .canvas-host canvas { width: 100% !important; height: 100% !important; display: block; }
+/* Shade over the court so the white text stays readable */
+.canvas-host::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(6, 30, 21, 0.88) 0%, rgba(6, 30, 21, 0.55) 42%, rgba(6, 30, 21, 0) 68%),
+    linear-gradient(0deg, rgba(6, 30, 21, calc(0.8 * var(--layers))) 0%, rgba(6, 30, 21, 0) 40%);
+}
+@media (min-width: 992px) {
+  .canvas-host::after {
+    background:
+      linear-gradient(90deg, rgba(6, 30, 21, 0.86) 0%, rgba(6, 30, 21, 0.6) 34%, rgba(6, 30, 21, 0) 58%),
+      linear-gradient(270deg, rgba(6, 30, 21, calc(0.82 * var(--layers))) 0%, rgba(6, 30, 21, calc(0.5 * var(--layers))) 30%, rgba(6, 30, 21, 0) 52%),
+      linear-gradient(180deg, rgba(6, 30, 21, 0.35) 0%, rgba(6, 30, 21, 0) 25%);
+  }
+}
 
 .leaders { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; pointer-events: none; opacity: var(--lines); display: none; }
 .leaders path { fill: none; stroke: rgba(255, 255, 255, 0.3); stroke-width: 1; }
@@ -53,6 +68,7 @@
 .mobile-card p { font-size: 0.875rem; color: rgba(255, 255, 255, 0.72); margin: 0.1rem 0 0; }
 
 .scroll-hint {
+  display: none;
   position: absolute; z-index: 3; left: 0; right: 0; bottom: 0.9rem; text-align: center;
   font-size: 0.8125rem; color: rgba(255, 255, 255, 0.6); opacity: var(--hint); pointer-events: none;
 }
@@ -60,6 +76,7 @@
 /* Desktop hero */
 @media (min-width: 992px) {
   .stage { height: calc(100vh - 60px); height: calc(100svh - 60px); }
+  .scroll-hint { display: block; }
   .intro { left: 0.75rem; right: auto; top: 50%; max-width: 34rem; transform: translateY(calc(-50% + (1 - var(--intro)) * -32px)); }
   .intro .lead { font-size: 1.125rem; }
   .layers-title { right: auto; top: 2.25rem; max-width: 21rem; }
