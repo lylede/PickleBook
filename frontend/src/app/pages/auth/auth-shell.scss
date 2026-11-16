@@ -1,0 +1,20 @@
+:host { display: block; }
+.auth-wrap { min-height: calc(100svh - 61px); display: flex; }
+.auth-side { display: none; }
+.auth-main { flex: 1; display: flex; justify-content: center; padding: 1.5rem 1rem 2.5rem; }
+.auth-card { width: 100%; max-width: 26rem; }
+.auth-card h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+@media (min-width: 992px) {
+  .auth-side {
+    display: flex; flex-direction: column; justify-content: space-between; width: 42%; max-width: 560px; padding: 3rem;
+    background: var(--pb-pine); color: rgba(255, 255, 255, 0.8);
+  }
+  .auth-side h2 { color: #fff; font-size: 2rem; line-height: 1.15; }
+  .auth-main { align-items: center; padding: 3rem 2rem; }
+}
+.role-option { cursor: pointer; }
+.role-option input { position: absolute; opacity: 0; pointer-events: none; }
+.role-option .card { transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.role-option input:checked + .card { border-color: var(--pb-green); box-shadow: 0 0 0 0.2rem rgba(15, 123, 69, 0.15); }
+.role-option input:focus-visible + .card { outline: 2px solid var(--pb-green); outline-offset: 2px; }
+.role-option input:checked + .card .bi { color: var(--pb-green); }

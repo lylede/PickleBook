@@ -19,7 +19,8 @@ router.get('/stats', asyncHandler(async (req, res) => {
   const [[plans]] = await pool.query(
     `SELECT SUM(plan='starter') AS starter, SUM(plan='pro') AS pro, SUM(plan='club') AS club
      FROM facilities WHERE status='approved'`);
-  const prices = { starter: 499, pro: 999, club: 1999 };
+  const PLANS = require('../config/plans');
+  const prices = { starter: PLANS.starter.price, pro: PLANS.pro.price, club: PLANS.club.price };
   const mrr = (plans.starter || 0) * prices.starter + (plans.pro || 0) * prices.pro + (plans.club || 0) * prices.club;
   res.json({
     players: Number(u.players || 0), owners: Number(u.owners || 0),

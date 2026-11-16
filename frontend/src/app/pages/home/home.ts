@@ -4,6 +4,8 @@ import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
 import { Facility } from '../../core/models';
 import { HourPipe, PesoPipe } from '../../shared/pipes';
+import { CourtArt } from '../../shared/court-art';
+import { PLANS } from '../../core/plans';
 import { PADDLE_PARTS, PaddleScene, ScreenAnchor } from './paddle-scene';
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
@@ -12,7 +14,7 @@ const smooth = (a: number, b: number, v: number) => { const t = clamp01((v - a) 
 @Component({
   selector: 'pb-home',
   standalone: true,
-  imports: [RouterLink, PesoPipe, HourPipe],
+  imports: [RouterLink, PesoPipe, HourPipe, CourtArt],
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })
@@ -22,6 +24,14 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
   auth = inject(AuthService);
 
   parts = PADDLE_PARTS;
+  plans = PLANS;
+  faqs = [
+    { q: 'How do I pay for a booking?', a: 'After you reserve a slot, the payment screen shows the facility’s GCash QR code, account name and number. Pay the exact amount in GCash, then upload a screenshot of the receipt with its reference number.' },
+    { q: 'How long is my slot held?', a: 'For 15 minutes after you reserve. If no payment is submitted by then, the slot becomes available to other players again.' },
+    { q: 'When is my booking confirmed?', a: 'When the court owner checks your receipt and confirms it. You can follow the status under My bookings.' },
+    { q: 'Can I cancel?', a: 'Yes, from My bookings. If you already paid, contact the facility about a refund. Refund rules are set by each facility.' },
+    { q: 'How do I list my facility?', a: 'Create a court owner account, add your courts, rates and GCash QR, and wait for approval. Players can book as soon as your facility is approved.' },
+  ];
   featured = signal<Facility[]>([]);
   webglFailed = signal(false);
 
@@ -86,17 +96,17 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
     const total = rect.height - window.innerHeight;
     const p = clamp01(-rect.top / Math.max(1, total));
 
-    const explode = smooth(0.08, 0.36, p);
+    const explode = smooth(0.1, 0.4, p);
     this.scene?.setExplode(explode);
 
     this.stage().nativeElement.classList.toggle('exploded', p > 0.2);
     const s = this.stage().nativeElement.style;
-    s.setProperty('--intro', String(1 - smooth(0.03, 0.18, p)));
-    s.setProperty('--layers', String(smooth(0.28, 0.4, p)));
+    s.setProperty('--intro', String(1 - smooth(0.04, 0.2, p)));
+    s.setProperty('--layers', String(smooth(0.32, 0.44, p)));
     s.setProperty('--hint', String(1 - smooth(0.0, 0.06, p)));
 
     // Walk through the layers one by one while the user keeps scrolling
-    this.scrollActive = p >= 0.4 ? Math.min(this.parts.length - 1, Math.floor(((p - 0.4) / 0.56) * this.parts.length)) : (explode > 0.9 ? 0 : -1);
+    this.scrollActive = p >= 0.44 ? Math.min(this.parts.length - 1, Math.floor(((p - 0.44) / 0.52) * this.parts.length)) : (explode > 0.9 ? 0 : -1);
     this.scene?.setHighlight(this.scrollActive);
   };
 
@@ -104,7 +114,7 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
     const stageRect = this.stage().nativeElement.getBoundingClientRect();
     this.labelPoints = this.labelEls().map((el) => {
       const r = el.nativeElement.getBoundingClientRect();
-      return { x: r.left - stageRect.left - 10, y: r.top - stageRect.top + 22 };
+      return { x: r.left - stageRect.left - 6, y: r.top - stageRect.top + 20 };
     });
   };
 
@@ -112,7 +122,7 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
   private drawLeaders(anchors: ScreenAnchor[], explode: number) {
     const active = this.hoverActive >= 0 ? this.hoverActive : this.scrollActive;
     const lines = this.lineEls();
-    const linesVisible = explode > 0.85 && window.innerWidth >= 900;
+    const linesVisible = explode > 0.85 && window.innerWidth >= 992;
     if (linesVisible) this.onResize(); // labels slide in, so measure them each frame
     this.stage().nativeElement.style.setProperty('--lines', linesVisible ? String((explode - 0.85) / 0.15) : '0');
 
@@ -121,7 +131,7 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
         const l = this.labelPoints[i];
         const path = lines[i]?.nativeElement;
         if (!l || !path) return;
-        const elbowX = l.x - 36;
+        const elbowX = l.x - 28;
         path.setAttribute('d', `M${a.x.toFixed(1)},${a.y.toFixed(1)} L${elbowX.toFixed(1)},${l.y.toFixed(1)} L${l.x.toFixed(1)},${l.y.toFixed(1)}`);
       });
     }
@@ -133,7 +143,7 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
       const card = this.mobileCard()?.nativeElement;
       if (card) {
         const part = this.parts[Math.max(0, active)];
-        card.querySelector('.mc-num')!.textContent = String(Math.max(0, active) + 1).padStart(2, '0');
+        card.querySelector('.mc-num')!.textContent = String(Math.max(0, active) + 1);
         card.querySelector('.mc-name')!.textContent = part.name;
         card.querySelector('.mc-feature')!.textContent = part.feature;
         card.querySelector('.mc-desc')!.textContent = part.desc;
@@ -141,12 +151,5 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  scrollToLayers() {
-    const el = this.hero().nativeElement;
-    window.scrollTo({ top: el.offsetTop + (el.offsetHeight - window.innerHeight) * 0.42, behavior: 'smooth' });
-  }
 
-  surfaces(f: Facility): string[] {
-    return (f.surfaces || '').split(',').filter(Boolean);
-  }
 }

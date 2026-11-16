@@ -2,22 +2,22 @@ import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/guards';
 
 const ownerNav = [
-  { path: '/owner', label: 'Overview', icon: '◎', exact: true },
-  { path: '/owner/bookings', label: 'Bookings', icon: '▦' },
-  { path: '/owner/courts', label: 'Courts & schedule', icon: '▭' },
-  { path: '/owner/facility', label: 'Facility & GCash', icon: '⌂' },
+  { path: '/owner', label: 'Overview', icon: 'bi-speedometer2', exact: true },
+  { path: '/owner/bookings', label: 'Bookings', icon: 'bi-calendar-check' },
+  { path: '/owner/courts', label: 'Courts', icon: 'bi-grid' },
+  { path: '/owner/facility', label: 'Facility', icon: 'bi-shop' },
 ];
 
 const adminNav = [
-  { path: '/admin', label: 'Overview', icon: '◎', exact: true },
-  { path: '/admin/facilities', label: 'Facilities', icon: '⌂' },
-  { path: '/admin/users', label: 'Users', icon: '◍' },
-  { path: '/admin/bookings', label: 'All bookings', icon: '▦' },
-  { path: '/admin/settings', label: 'Platform settings', icon: '⚙' },
+  { path: '/admin', label: 'Overview', icon: 'bi-speedometer2', exact: true },
+  { path: '/admin/facilities', label: 'Facilities', icon: 'bi-shop' },
+  { path: '/admin/users', label: 'Users', icon: 'bi-people' },
+  { path: '/admin/bookings', label: 'Bookings', icon: 'bi-calendar-check' },
+  { path: '/admin/settings', label: 'Settings', icon: 'bi-gear' },
 ];
 
 export const routes: Routes = [
-  { path: '', loadComponent: () => import('./pages/home/home').then((m) => m.HomePage), title: 'PickleBook — Book pickleball courts' },
+  { path: '', loadComponent: () => import('./pages/home/home').then((m) => m.HomePage), title: 'PickleBook · Book pickleball courts in Cebu' },
   { path: 'login', canActivate: [guestGuard], loadComponent: () => import('./pages/auth/login').then((m) => m.LoginPage), title: 'Log in · PickleBook' },
   { path: 'register', canActivate: [guestGuard], loadComponent: () => import('./pages/auth/register').then((m) => m.RegisterPage), title: 'Create account · PickleBook' },
   { path: 'courts', loadComponent: () => import('./pages/courts/courts').then((m) => m.CourtsPage), title: 'Find courts · PickleBook' },
@@ -28,7 +28,11 @@ export const routes: Routes = [
   },
   {
     path: 'bookings/:id/pay', canActivate: [authGuard], data: { roles: ['player'] },
-    loadComponent: () => import('./pages/player/payment').then((m) => m.PaymentPage), title: 'Pay with GCash · PickleBook',
+    loadComponent: () => import('./pages/player/payment').then((m) => m.PaymentPage), title: 'Booking · PickleBook',
+  },
+  {
+    path: 'account', canActivate: [authGuard],
+    loadComponent: () => import('./pages/player/account').then((m) => m.AccountPage), title: 'Account · PickleBook',
   },
   {
     path: 'owner', canActivate: [authGuard], data: { roles: ['owner'], nav: ownerNav, area: 'Court owner' },
@@ -41,7 +45,7 @@ export const routes: Routes = [
     ],
   },
   {
-    path: 'admin', canActivate: [authGuard], data: { roles: ['admin'], nav: adminNav, area: 'Super admin' },
+    path: 'admin', canActivate: [authGuard], data: { roles: ['admin'], nav: adminNav, area: 'Admin' },
     loadComponent: () => import('./pages/dash/dash-layout').then((m) => m.DashLayout),
     children: [
       { path: '', loadComponent: () => import('./pages/admin/overview').then((m) => m.AdminOverviewPage), title: 'Admin · PickleBook' },

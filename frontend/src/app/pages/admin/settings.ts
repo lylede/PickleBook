@@ -7,32 +7,37 @@ import { ToastService } from '../../core/toast.service';
   selector: 'pb-admin-settings',
   standalone: true,
   imports: [FormsModule],
-  styleUrl: '../dash/dash.scss',
   template: `
-    <div class="head"><div><h1>Platform settings</h1><p>The PickleBook GCash account. Players see this QR when a facility hasn't uploaded its own.</p></div></div>
-    <div class="cols two">
-      <form class="panel" (ngSubmit)="save()">
-        <div class="panel-head"><h2>PickleBook GCash account</h2></div>
-        <div class="panel-body">
-          <div class="field"><label>Account name</label><input class="input" name="n" [(ngModel)]="name"></div>
-          <div class="field"><label>GCash number</label><input class="input" name="num" [(ngModel)]="number" inputmode="tel"></div>
-          <button class="btn btn-primary" [disabled]="saving()">Save</button>
-        </div>
-      </form>
-      <div class="panel">
-        <div class="panel-head"><h2>Platform GCash QR</h2></div>
-        <div class="panel-body" style="display: grid; gap: 16px; justify-items: start">
-          <div class="qr-box">
-            @if (qr()) { <img [src]="api.asset(qr())" alt="Platform GCash QR"> } @else { <span>No QR yet</span> }
+    <h1 class="page-title">Settings</h1>
+    <p class="page-sub mb-3 small">PickleBook's own GCash account. Players see it when a facility hasn't uploaded a QR yet.</p>
+    <div class="row g-3">
+      <div class="col-12 col-xl-7">
+        <form class="card" (ngSubmit)="save()">
+          <div class="card-header">GCash account</div>
+          <div class="card-body">
+            <div class="mb-3"><label class="form-label" for="s-name">Account name</label><input id="s-name" class="form-control" name="n" [(ngModel)]="name"></div>
+            <div class="mb-3"><label class="form-label" for="s-num">GCash number</label><input id="s-num" class="form-control" name="num" [(ngModel)]="number" inputmode="tel"></div>
+            <button class="btn btn-primary" [disabled]="saving()">@if (saving()) { <span class="spinner-border" aria-hidden="true"></span> } Save</button>
           </div>
-          <label class="btn btn-lime file-btn">
-            {{ qr() ? 'Replace QR' : 'Upload QR' }}
-            <input type="file" accept="image/png,image/jpeg,image/webp" (change)="upload($event)">
-          </label>
+        </form>
+      </div>
+      <div class="col-12 col-xl-5">
+        <div class="card">
+          <div class="card-header">GCash QR code</div>
+          <div class="card-body d-flex gap-3 align-items-center">
+            <div class="qr-box">
+              @if (qr()) { <img [src]="api.asset(qr())" alt="PickleBook GCash QR"> } @else { <span class="small text-secondary">No QR</span> }
+            </div>
+            <label class="btn btn-primary btn-sm mb-0">
+              <i class="bi bi-upload me-1"></i>{{ qr() ? 'Replace QR' : 'Upload QR' }}
+              <input type="file" class="visually-hidden" accept="image/png,image/jpeg,image/webp" (change)="upload($event)">
+            </label>
+          </div>
         </div>
       </div>
     </div>
   `,
+  styles: [`.qr-box { width: 128px; height: 128px; flex: none; border: 1px dashed #c3cfc7; border-radius: .75rem; display: grid; place-items: center; overflow: hidden; background: var(--pb-bg); } .qr-box img { width: 100%; height: 100%; object-fit: contain; background: #fff; }`],
 })
 export class AdminSettingsPage implements OnInit {
   api = inject(ApiService);
@@ -51,8 +56,8 @@ export class AdminSettingsPage implements OnInit {
 
   save() {
     this.saving.set(true);
-    this.api.adminSaveSettings({ platform_gcash_name: this.name, platform_gcash_number: this.number }).subscribe({
-      next: (r) => { this.saving.set(false); this.toast.success(r.message); },
+    this.api.adminSaveSettings({ platform_gcash_name: this.name.trim(), platform_gcash_number: this.number.trim() }).subscribe({
+      next: () => { this.saving.set(false); this.toast.success('Settings saved'); },
       error: (e) => { this.saving.set(false); this.toast.error(errMsg(e)); },
     });
   }
@@ -61,7 +66,7 @@ export class AdminSettingsPage implements OnInit {
     const f = (e.target as HTMLInputElement).files?.[0];
     if (!f) return;
     this.api.adminUploadQr(f).subscribe({
-      next: (r) => { this.qr.set(r.platform_gcash_qr); this.toast.success(r.message); },
+      next: (r) => { this.qr.set(r.platform_gcash_qr); this.toast.success('QR saved'); },
       error: (err) => this.toast.error(errMsg(err)),
     });
   }

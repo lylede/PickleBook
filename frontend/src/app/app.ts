@@ -1,29 +1,29 @@
-import { Component, computed, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { filter, map } from 'rxjs';
+import { Component, inject } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { LayoutService } from './core/layout.service';
 import { Navbar } from './shared/navbar';
+import { Tabbar } from './shared/tabbar';
 import { Footer } from './shared/footer';
 import { Toasts } from './shared/toasts';
+import { ConfirmDialog } from './shared/confirm-dialog';
 
 @Component({
   selector: 'pb-root',
   standalone: true,
-  imports: [RouterOutlet, Navbar, Footer, Toasts],
+  imports: [RouterOutlet, Navbar, Tabbar, Footer, Toasts, ConfirmDialog],
   template: `
+    <a class="visually-hidden-focusable" href="#main">Skip to content</a>
     <pb-navbar />
-    <main><router-outlet /></main>
-    @if (showFooter()) { <pb-footer /> }
+    <div [class.has-tabbar]="layout.showTabbar()">
+      <main id="main"><router-outlet /></main>
+      @if (layout.showFooter()) { <pb-footer /> }
+    </div>
+    @if (layout.showTabbar()) { <pb-tabbar /> }
     <pb-toasts />
+    <pb-confirm />
   `,
-  styles: [`main { min-height: 100svh; }`],
+  styles: [`main { min-height: calc(100svh - 61px); display: block; }`],
 })
 export class App {
-  private router = inject(Router);
-  private url = toSignal(
-    this.router.events.pipe(filter((e) => e instanceof NavigationEnd), map((e: any) => e.urlAfterRedirects as string)),
-    { initialValue: '/' },
-  );
-  // Dashboards and auth pages are full-screen apps without the marketing footer
-  showFooter = computed(() => !/^\/(owner|admin|login|register)/.test(this.url()));
+  layout = inject(LayoutService);
 }

@@ -40,6 +40,12 @@ export class AuthService {
     return this.api.register(body).pipe(tap((r) => this.save(r.token, r.user)));
   }
 
+  /** Keeps the stored user in sync after a profile edit */
+  setUser(user: User) {
+    try { localStorage.setItem(USER_KEY, JSON.stringify(user)); } catch { /* storage unavailable */ }
+    this.user.set(user);
+  }
+
   logout(redirect = true) {
     try { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(USER_KEY); } catch { /* ignore */ }
     this.user.set(null);

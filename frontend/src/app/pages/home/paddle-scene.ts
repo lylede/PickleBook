@@ -1,11 +1,12 @@
 /**
- * PickleBook 3D hero — an exploded pickleball paddle built entirely in code with Three.js.
+ * PickleBook hero: a realistic carbon pickleball paddle built in code with Three.js.
  *
- * Layers (top to bottom, like a real carbon paddle):
- *   graphic face · carbon top · honeycomb core · carbon bottom · edge guard · throat · grip wrap · handle core · butt cap
+ * Real-world proportions (elongated shape): 16.5 in long, 7.4 in wide, 16 mm core, 5.25 in handle.
+ * Parts, top to bottom: face print, carbon skin, honeycomb core, carbon skin,
+ * edge guard, throat collar, grip wrap, handle core, butt cap.
  *
- * setExplode(0..1) moves every part from its assembled spot to its exploded spot.
- * onFrame() reports where each part is on screen so the page can draw leader lines to labels.
+ * setExplode(0..1) separates the parts. onFrame() reports each part's screen position
+ * so the page can draw leader lines to its labels.
  */
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
@@ -13,42 +14,87 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 export interface PaddlePartInfo { name: string; feature: string; desc: string; }
 
 export const PADDLE_PARTS: PaddlePartInfo[] = [
-  { name: 'Top graphic layer', feature: 'Discover courts', desc: 'Every partner facility, rate and schedule in one place.' },
-  { name: 'Carbon fiber · top', feature: 'Live availability', desc: 'Open slots update in real time. No more “available pa po?”' },
-  { name: 'Polymer honeycomb core', feature: 'Zero double bookings', desc: 'A slot locks the moment you reserve it.' },
-  { name: 'Carbon fiber · bottom', feature: 'Secure accounts', desc: 'Separate access for players, owners and admins.' },
-  { name: 'Edge guard', feature: 'GCash QR payments', desc: 'Scan the court’s QR, upload your receipt, done.' },
-  { name: 'Throat / neck', feature: 'Owner dashboard', desc: 'Verify payments and manage courts from one screen.' },
-  { name: 'Grip wrap', feature: 'My Bookings', desc: 'Track every reservation and its status.' },
-  { name: 'Handle core', feature: 'Super admin', desc: 'Approves facilities and keeps the platform fair.' },
-  { name: 'Butt cap', feature: 'Booking reports', desc: 'See your busiest days and peak hours.' },
+  { name: 'Face print', feature: 'Find courts', desc: 'Every partner facility with rates and opening hours.' },
+  { name: 'Carbon face', feature: 'Live availability', desc: 'Open and booked hours for each court, updated as people book.' },
+  { name: 'Honeycomb core', feature: 'No double bookings', desc: 'A slot is locked the moment someone reserves it.' },
+  { name: 'Carbon back', feature: 'Secure accounts', desc: 'Separate access for players, court owners and admins.' },
+  { name: 'Edge guard', feature: 'GCash payments', desc: 'Scan the facility QR, then upload your receipt.' },
+  { name: 'Throat', feature: 'Owner dashboard', desc: 'Verify payments and manage courts in one place.' },
+  { name: 'Grip', feature: 'My bookings', desc: 'Track every reservation and its status.' },
+  { name: 'Handle core', feature: 'Admin approval', desc: 'Facilities are reviewed before they go live.' },
+  { name: 'Butt cap', feature: 'Reports', desc: 'Revenue and peak hours for each facility.' },
 ];
 
 export interface ScreenAnchor { x: number; y: number; }
 
-// Paddle dimensions (scene units)
-const W = 1.95;      // face width
-const H = 2.9;       // face height (elongated shape)
-const FACE_Y = 0.75; // face center height
+// ---------------------------------------------------------------- dimensions
+// 1 unit = 3.9 in. Head is centered on its own origin.
+const W = 1.9;                 // face width  (7.4 in)
+const HEAD_H = 2.89;           // head length incl. shoulders (11.25 in)
+const HALF_H = HEAD_H / 2;
+const NECK_W = 0.2;            // half width of the neck
+const HANDLE_LEN = 1.36;       // 5.25 in
+const HEAD_Y = 0.68;           // head center in paddle space
+const NECK_Y = HEAD_Y - HALF_H; // where head meets handle
 
-// ---------------------------------------------------------------- shapes
-function faceShape(inset = 0): THREE.Shape {
-  const w = W / 2 - inset;
-  const h = H / 2 - inset;
-  const r = Math.max(0.06, 0.46 - inset);           // rounded top corners
-  const c = Math.max(0.04, 0.3 - inset * 0.6);      // chamfered bottom corners
+const CORE_T = 0.118;          // honeycomb core
+const SKIN_T = 0.014;          // carbon skin
+const PRINT_T = 0.005;         // printed surface
+const GUARD_T = 0.176;         // edge guard
+
+// ---------------------------------------------------------------- outline
+/** Paddle head outline: rounded top, straight sides, shoulders flowing into the neck. */
+function headPath(): THREE.Shape {
+  const hw = W / 2;
   const s = new THREE.Shape();
-  s.moveTo(-w + c, -h);
-  s.lineTo(w - c, -h);
-  s.lineTo(w, -h + c);
-  s.lineTo(w, h - r);
-  s.bezierCurveTo(w, h - r * 0.35, w - r * 0.35, h, w - r, h);
-  s.lineTo(-w + r, h);
-  s.bezierCurveTo(-w + r * 0.35, h, -w, h - r * 0.35, -w, h - r);
-  s.lineTo(-w, -h + c);
+  s.moveTo(NECK_W, -HALF_H);
+  s.bezierCurveTo(NECK_W + 0.015, -HALF_H + 0.2, 0.36, -HALF_H + 0.3, 0.55, -HALF_H + 0.36); // concave fillet
+  s.bezierCurveTo(0.8, -HALF_H + 0.44, hw, -HALF_H + 0.62, hw, -HALF_H + 0.95);              // shoulder
+  s.lineTo(hw, HALF_H - 0.58);
+  s.bezierCurveTo(hw, HALF_H - 0.2, hw - 0.24, HALF_H - 0.012, hw - 0.56, HALF_H - 0.004);    // top corner
+  s.bezierCurveTo(0.14, HALF_H + 0.012, -0.14, HALF_H + 0.012, -(hw - 0.56), HALF_H - 0.004); // slight crown
+  s.bezierCurveTo(-(hw - 0.24), HALF_H - 0.012, -hw, HALF_H - 0.2, -hw, HALF_H - 0.58);
+  s.lineTo(-hw, -HALF_H + 0.95);
+  s.bezierCurveTo(-hw, -HALF_H + 0.62, -0.8, -HALF_H + 0.44, -0.55, -HALF_H + 0.36);
+  s.bezierCurveTo(-0.36, -HALF_H + 0.3, -(NECK_W + 0.015), -HALF_H + 0.2, -NECK_W, -HALF_H);
   s.closePath();
   return s;
 }
+
+let outlineCache: THREE.Vector2[] | null = null;
+function outline(): THREE.Vector2[] {
+  if (outlineCache) return outlineCache;
+  const pts = headPath().getPoints(18);
+  const out: THREE.Vector2[] = [];
+  for (const p of pts) {
+    const last = out[out.length - 1];
+    if (!last || last.distanceTo(p) > 1e-4) out.push(p);
+  }
+  if (out.length > 2 && out[0].distanceTo(out[out.length - 1]) < 1e-4) out.pop();
+  outlineCache = out;
+  return out;
+}
+
+/** Offsets a closed polygon. d > 0 shrinks it, d < 0 grows it. */
+function offsetPolygon(pts: THREE.Vector2[], d: number): THREE.Vector2[] {
+  const n = pts.length;
+  let area = 0;
+  for (let i = 0; i < n; i++) { const p = pts[i], q = pts[(i + 1) % n]; area += p.x * q.y - q.x * p.y; }
+  const sign = area > 0 ? 1 : -1;
+  return pts.map((p, i) => {
+    const a = pts[(i - 1 + n) % n], b = pts[(i + 1) % n];
+    const e1 = p.clone().sub(a).normalize(), e2 = b.clone().sub(p).normalize();
+    const n2 = new THREE.Vector2(-e2.y, e2.x);
+    const m = new THREE.Vector2(-e1.y, e1.x).add(n2);
+    const len = m.length();
+    if (len < 1e-6) return p.clone();
+    m.divideScalar(len);
+    const cos = Math.max(0.4, m.dot(n2));
+    return p.clone().addScaledVector(m, (sign * d) / cos);
+  });
+}
+
+const headShape = (inset: number) => new THREE.Shape(offsetPolygon(outline(), inset));
 
 function pointInPolygon(x: number, y: number, poly: THREE.Vector2[]): boolean {
   let inside = false;
@@ -60,14 +106,14 @@ function pointInPolygon(x: number, y: number, poly: THREE.Vector2[]): boolean {
 }
 
 function honeycombShape(): THREE.Shape {
-  const shape = faceShape(0.04);
-  const bounds = faceShape(0.12).getPoints(6);
-  const r = 0.115;                    // hex cell radius
-  const hole = r * 0.8;               // leaves thin walls
+  const shape = headShape(0.03);
+  const bounds = offsetPolygon(outline(), 0.085);
+  const r = 0.072;            // about 8 mm cells
+  const hole = r * 0.84;
   const dx = r * 1.5;
   const dy = Math.sqrt(3) * r;
-  for (let col = -8; col <= 8; col++) {
-    for (let row = -10; row <= 10; row++) {
+  for (let col = -10; col <= 10; col++) {
+    for (let row = -13; row <= 13; row++) {
       const cx = col * dx;
       const cy = row * dy + (col % 2 !== 0 ? dy / 2 : 0);
       const pts: THREE.Vector2[] = [];
@@ -82,22 +128,22 @@ function honeycombShape(): THREE.Shape {
 }
 
 function edgeGuardShape(): THREE.Shape {
-  const outer = faceShape(-0.035);
-  const inner = faceShape(0.05);
-  outer.holes.push(new THREE.Path(inner.getPoints(10)));
+  const outer = new THREE.Shape(offsetPolygon(outline(), -0.02));
+  outer.holes.push(new THREE.Path(offsetPolygon(outline(), 0.034)));
   return outer;
 }
 
+/** Molded collar where the head meets the handle. Origin sits on the neck line. */
 function throatShape(): THREE.Shape {
   const s = new THREE.Shape();
-  s.moveTo(-0.64, 0.12);
-  s.lineTo(0.64, 0.12);
-  s.lineTo(0.64, 0.0);
-  s.bezierCurveTo(0.36, -0.02, 0.22, -0.12, 0.21, -0.3);
-  s.lineTo(0.21, -0.42);
-  s.lineTo(-0.21, -0.42);
-  s.lineTo(-0.21, -0.3);
-  s.bezierCurveTo(-0.22, -0.12, -0.36, -0.02, -0.64, 0.0);
+  s.moveTo(-0.212, -0.2);
+  s.lineTo(0.212, -0.2);
+  s.lineTo(0.222, 0.0);
+  s.bezierCurveTo(0.25, 0.19, 0.38, 0.27, 0.53, 0.325);
+  s.lineTo(0.5, 0.4);
+  s.bezierCurveTo(0.3, 0.3, -0.3, 0.3, -0.5, 0.4);
+  s.lineTo(-0.53, 0.325);
+  s.bezierCurveTo(-0.38, 0.27, -0.25, 0.19, -0.222, 0.0);
   s.closePath();
   return s;
 }
@@ -105,9 +151,35 @@ function throatShape(): THREE.Shape {
 function extrude(shape: THREE.Shape, depth: number, bevel = 0, curveSegments = 12): THREE.ExtrudeGeometry {
   const g = new THREE.ExtrudeGeometry(shape, {
     depth, curveSegments,
-    bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 3,
+    bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 4,
   });
   g.translate(0, 0, -depth / 2);
+  return g;
+}
+
+/**
+ * Turns a round geometry (unit radius, axis on Y) into a handle cross-section:
+ * a rounded rectangle sx by sz. Optional spiral ridges imitate an overlapped grip wrap.
+ */
+function shapeHandle(g: THREE.BufferGeometry, sx: number, sz: number, len = 1, wraps = 0, flare = 0): THREE.BufferGeometry {
+  const pos = g.attributes['position'] as THREE.BufferAttribute;
+  const power = 3.2;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+    const r = Math.hypot(x, z);
+    if (r < 1e-6) continue;
+    const c = x / r, s = z / r;
+    const squarish = Math.pow(Math.pow(Math.abs(c), power) + Math.pow(Math.abs(s), power), -1 / power);
+    const t = y / len + 0.5;                       // 0 at the butt, 1 at the throat
+    let k = squarish * (1 + flare * (1 - t) * (1 - t));
+    if (wraps > 0 && r > 0.98) {
+      const phase = (((Math.atan2(z, x) / (Math.PI * 2) + t * wraps) % 1) + 1) % 1;
+      k *= 1 + 0.026 * phase;                      // tape overlap: ramps up, then steps down
+    }
+    pos.setXYZ(i, c * r * sx * k, y, s * r * sz * k);
+  }
+  pos.needsUpdate = true;
+  g.computeVertexNormals();
   return g;
 }
 
@@ -118,158 +190,191 @@ function canvas(w: number, h: number): [HTMLCanvasElement, CanvasRenderingContex
   return [c, c.getContext('2d')!];
 }
 
-const DISPLAY_FONT = '"Unbounded", "Plus Jakarta Sans", Arial, sans-serif';
+const FONT = '"Plus Jakarta Sans", "Inter", "Segoe UI", Arial, sans-serif';
+const TEX_W = 1024;
+const TEX_H = Math.round((TEX_W * HEAD_H) / W);
 
-function graphicTexture(): HTMLCanvasElement {
-  const [c, g] = canvas(1024, 1524);
-  const cw = c.width, ch = c.height;
-
-  // Base gradient: deep forest -> court green -> lime glow
-  const grad = g.createLinearGradient(0, 0, cw, ch * 0.75);
-  grad.addColorStop(0, '#052e1c');
-  grad.addColorStop(0.45, '#15803d');
-  grad.addColorStop(1, '#a3e635');
-  g.fillStyle = grad;
-  g.fillRect(0, 0, cw, ch);
-
-  // Top-down pickleball court, rotated across the face
-  g.save();
-  g.translate(cw * 0.52, ch * 0.4);
-  g.rotate(-0.42);
-  g.strokeStyle = 'rgba(255,255,255,0.75)';
-  g.lineWidth = 12;
-  const cwid = 560, clen = 1240, kitchen = 190;
-  g.strokeRect(-cwid / 2, -clen / 2, cwid, clen);
-  g.beginPath();
-  g.moveTo(-cwid / 2, -kitchen); g.lineTo(cwid / 2, -kitchen);
-  g.moveTo(-cwid / 2, kitchen); g.lineTo(cwid / 2, kitchen);
-  g.moveTo(0, -clen / 2); g.lineTo(0, -kitchen);
-  g.moveTo(0, kitchen); g.lineTo(0, clen / 2);
-  g.stroke();
-  // net
-  g.strokeStyle = 'rgba(190,242,100,0.95)';
-  g.lineWidth = 18;
-  g.beginPath(); g.moveTo(-cwid / 2 - 40, 0); g.lineTo(cwid / 2 + 40, 0); g.stroke();
-  // kitchen zone tint
-  g.fillStyle = 'rgba(4,20,13,0.28)';
-  g.fillRect(-cwid / 2, -kitchen, cwid, kitchen * 2);
-  g.restore();
-
-  // Ball
-  g.fillStyle = '#d4f53c';
-  g.beginPath(); g.arc(cw * 0.76, ch * 0.2, 46, 0, Math.PI * 2); g.fill();
-  g.fillStyle = 'rgba(4,20,13,0.35)';
-  [[-14, -12], [16, -6], [-4, 16], [20, 20], [-22, 10]].forEach(([x, y]) => {
-    g.beginPath(); g.arc(cw * 0.76 + x, ch * 0.2 + y, 6, 0, Math.PI * 2); g.fill();
-  });
-
-  // Bottom carbon panel
-  const panelY = ch * 0.74;
-  const fade = g.createLinearGradient(0, panelY - 60, 0, panelY + 20);
-  fade.addColorStop(0, 'rgba(10,14,12,0)');
-  fade.addColorStop(1, 'rgba(10,14,12,1)');
-  g.fillStyle = fade; g.fillRect(0, panelY - 60, cw, 80);
-  g.fillStyle = '#0a0e0c'; g.fillRect(0, panelY + 20, cw, ch);
-  g.globalAlpha = 0.18;
-  for (let y = panelY + 20; y < ch; y += 16) {
-    for (let x = 0; x < cw; x += 16) {
-      g.fillStyle = ((x + y) / 16) % 2 ? '#3a403d' : '#1a1e1c';
-      g.fillRect(x, y, 16, 16);
+/** Raw carbon twill, matte and low contrast like a peel-ply paddle face. */
+function drawWeave(g: CanvasRenderingContext2D, w: number, h: number, cell = 9, light = 1) {
+  g.fillStyle = '#131615';
+  g.fillRect(0, 0, w, h);
+  for (let y = 0, j = 0; y < h; y += cell, j++) {
+    for (let x = 0, i = 0; x < w; x += cell, i++) {
+      const over = (i + j) % 4 < 2;
+      const v = over ? 30 + 10 * light : 20;
+      const grad = over ? g.createLinearGradient(x, y, x + cell, y) : g.createLinearGradient(x, y, x, y + cell);
+      grad.addColorStop(0, `rgb(${v - 8},${v - 5},${v - 7})`);
+      grad.addColorStop(0.5, `rgb(${v + 9},${v + 12},${v + 10})`);
+      grad.addColorStop(1, `rgb(${v - 8},${v - 5},${v - 7})`);
+      g.fillStyle = grad;
+      g.fillRect(x, y, cell - 0.6, cell - 0.6);
     }
+  }
+}
+
+/** The PickleBook mark (same artwork as brand/logo-mark.svg), drawn in a 48 x 48 box. */
+const MARK_PATH = 'M17 3h8a9 9 0 0 1 9 9v10.5c0 4.6-4.600 6.300-7.400 7.200-1.100.4-1.600 1.200-1.600 2.300v13.500l-4-4-4 4V32c0-1.100-.5-1.900-1.600-2.300C12.600 28.800 8 27.100 8 22.500V12a9 9 0 0 1 9-9Z';
+function drawMark(g: CanvasRenderingContext2D, cx: number, cy: number, size: number, body: string, ball: string) {
+  const k = size / 48;
+  g.save();
+  g.translate(cx - 24 * k, cy - 24 * k);
+  g.scale(k, k);
+  g.save();
+  const clip = new Path2D();
+  clip.rect(0, 0, 48, 48);
+  clip.arc(37.2, 11.2, 8.6, 0, Math.PI * 2);
+  g.clip(clip, 'evenodd');
+  g.fillStyle = body;
+  g.fill(new Path2D(MARK_PATH));
+  g.restore();
+  g.fillStyle = ball;
+  g.beginPath(); g.arc(37.2, 11.2, 6.2, 0, Math.PI * 2); g.fill();
+  g.restore();
+}
+
+function printTexture(): HTMLCanvasElement {
+  const [c, g] = canvas(TEX_W, TEX_H);
+  const w = TEX_W, h = TEX_H;
+
+  // Full-face gradient: deep court green at the throat, lime at the tip
+  const grad = g.createLinearGradient(w * 0.15, h, w * 0.85, 0);
+  grad.addColorStop(0, '#075a35');
+  grad.addColorStop(0.4, '#119152');
+  grad.addColorStop(0.75, '#3fb64a');
+  grad.addColorStop(1, '#bfe33f');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, w, h);
+
+  // soft light across the upper face
+  const sheen = g.createRadialGradient(w * 0.7, h * 0.18, 0, w * 0.7, h * 0.18, w * 0.9);
+  sheen.addColorStop(0, 'rgba(255,255,255,0.08)');
+  sheen.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = sheen;
+  g.fillRect(0, 0, w, h);
+
+  // Diagonal court-line bands: two parallel ribbons crossing the face
+  const band = (offset: number, width: number, color: string) => {
+    g.save();
+    g.translate(w * 0.5, h * 0.44);
+    g.rotate(-0.62);
+    g.fillStyle = color;
+    g.beginPath();
+    g.roundRect(-w * 1.2, offset, w * 2.4, width, width / 2);
+    g.fill();
+    g.restore();
+  };
+  band(-150, 120, 'rgba(6, 58, 36, 0.55)');
+  band(-6, 46, 'rgba(6, 58, 36, 0.4)');
+  band(78, 16, 'rgba(255, 255, 255, 0.55)');
+
+  // fine carbon texture through the ink
+  g.globalAlpha = 0.035;
+  for (let y = 0, j = 0; y < h; y += 9, j++) for (let x = 0, i = 0; x < w; x += 9, i++) {
+    g.fillStyle = (i + j) % 4 < 2 ? '#ffffff' : '#000000';
+    g.fillRect(x, y, 8.4, 8.4);
   }
   g.globalAlpha = 1;
 
-  // Wordmark top
-  g.fillStyle = '#ffffff';
-  g.font = `800 64px ${DISPLAY_FONT}`;
+  // brand lockup near the top, like a production paddle
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.fillText('PICKLEBOOK', cw / 2, 96);
+  drawMark(g, w / 2 - 150, 132, 70, '#ffffff', '#0a6a3f');
+  g.fillStyle = '#ffffff';
+  g.font = `800 54px ${FONT}`;
+  g.fillText('picklebook', w / 2 + 40, 132);
 
-  // Model name on the carbon panel
-  g.font = `700 92px ${DISPLAY_FONT}`;
-  g.fillText('COURTSIDE', cw / 2, panelY + 150);
-  g.fillStyle = '#bef264';
-  g.font = `700 34px ${DISPLAY_FONT}`;
-  g.fillText('PRO · 16MM · CARBON', cw / 2, panelY + 230);
-  g.fillRect(cw / 2 - 3, panelY + 50, 6, 36);
-  g.fillRect(cw / 2 - 18, panelY + 65, 36, 6);
+  // vertical model text along the left edge
+  g.save();
+  g.translate(112, h * 0.52);
+  g.rotate(-Math.PI / 2);
+  g.fillStyle = 'rgba(255,255,255,0.85)';
+  g.font = `700 34px ${FONT}`;
+  g.fillText('COURTSIDE  ·  16MM  ·  RAW CARBON', 0, 0);
+  g.restore();
+
+  // model badge near the throat
+  drawMark(g, w / 2 - 92, h * 0.83, 46, 'rgba(255,255,255,0.95)', '#18a05a');
+  g.fillStyle = '#ffffff';
+  g.font = `800 58px ${FONT}`;
+  g.fillText('PRO', w / 2 + 34, h * 0.83 + 2);
   return c;
 }
 
 function carbonTexture(): HTMLCanvasElement {
-  const [c, g] = canvas(256, 256);
-  const s = 16;
-  for (let y = 0; y < 256; y += s) {
-    for (let x = 0; x < 256; x += s) {
-      const twill = ((x / s) + (y / s)) % 4 < 2;
-      const grad = twill ? g.createLinearGradient(x, y, x + s, y) : g.createLinearGradient(x, y, x, y + s);
-      grad.addColorStop(0, '#121614');
-      grad.addColorStop(0.5, '#3b423e');
-      grad.addColorStop(1, '#121614');
-      g.fillStyle = grad;
-      g.fillRect(x, y, s, s);
-    }
-  }
+  const [c, g] = canvas(TEX_W, TEX_H);
+  drawWeave(g, TEX_W, TEX_H, 9, 1.4);
+  return c;
+}
+
+/** Transparent decal for the back of the paddle. */
+function backMarkTexture(): HTMLCanvasElement {
+  const [c, g] = canvas(512, 512);
+  drawMark(g, 256, 256, 440, '#e9ede9', '#c6e84a');
   return c;
 }
 
 function gripTexture(): HTMLCanvasElement {
   const [c, g] = canvas(512, 1024);
-  g.fillStyle = '#f2f6f3';
+  g.fillStyle = '#eef0ec';
   g.fillRect(0, 0, 512, 1024);
-  // perforations
-  g.fillStyle = 'rgba(6,36,23,0.08)';
-  for (let y = 6; y < 1024; y += 14) for (let x = (y / 14) % 2 ? 6 : 13; x < 512; x += 14) {
-    g.beginPath(); g.arc(x, y, 2.6, 0, Math.PI * 2); g.fill();
+  g.fillStyle = 'rgba(20, 30, 25, 0.16)';
+  for (let y = 7, j = 0; y < 1024; y += 13, j++) {
+    for (let x = j % 2 ? 6 : 12.5; x < 512; x += 13) { g.beginPath(); g.arc(x, y, 2.1, 0, Math.PI * 2); g.fill(); }
   }
-  // overlapping wrap edges + wordmark
-  g.save();
-  g.rotate(-0.38);
-  for (let i = -6; i < 14; i++) {
-    const y = i * 120;
-    g.fillStyle = 'rgba(6,36,23,0.12)';
-    g.fillRect(-400, y, 1400, 4);
-    g.fillStyle = '#0b3d2a';
-    g.font = `800 42px ${DISPLAY_FONT}`;
-    g.fillText('PICKLEBOOK', -200 + (i % 2) * 140, y + 74);
+  // printed wordmark bands, the way grip tape is branded
+  g.fillStyle = '#0b3d2a';
+  g.font = `800 40px ${FONT}`;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  for (const y of [180, 540, 900]) {
+    g.save(); g.translate(256, y); g.rotate(-0.18); g.fillText('PICKLEBOOK', 0, 0); g.restore();
   }
-  g.restore();
+  return c;
+}
+
+function gripBump(): HTMLCanvasElement {
+  const [c, g] = canvas(512, 1024);
+  g.fillStyle = '#808080';
+  g.fillRect(0, 0, 512, 1024);
+  g.fillStyle = '#303030';
+  for (let y = 7, j = 0; y < 1024; y += 13, j++) {
+    for (let x = j % 2 ? 6 : 12.5; x < 512; x += 13) { g.beginPath(); g.arc(x, y, 2.4, 0, Math.PI * 2); g.fill(); }
+  }
   return c;
 }
 
 function capTexture(): HTMLCanvasElement {
   const [c, g] = canvas(256, 256);
-  g.fillStyle = '#f4f7f5';
+  g.fillStyle = '#eef0ec';
   g.fillRect(0, 0, 256, 256);
-  g.fillStyle = '#0b3d2a';
-  g.font = `800 92px ${DISPLAY_FONT}`;
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
-  g.fillText('PB', 128, 132);
+  drawMark(g, 128, 128, 150, '#0b3d2a', '#8fbf1f');
   return c;
 }
 
 function ballTexture(): HTMLCanvasElement {
-  const [c, g] = canvas(512, 256);
-  g.fillStyle = '#d4f53c';
-  g.fillRect(0, 0, 512, 256);
-  g.fillStyle = '#9fbf1f';
-  for (let row = 0; row < 5; row++) {
-    const y = 28 + row * 50;
-    const count = row === 0 || row === 4 ? 4 : 8;
+  const [c, g] = canvas(1024, 512);
+  g.fillStyle = '#d7ee3f';
+  g.fillRect(0, 0, 1024, 512);
+  g.fillStyle = '#7f9416';
+  // 40 holes laid out in latitude bands; widths stretched toward the poles to stay round on the sphere
+  const bands = [[0.13, 4], [0.3, 8], [0.5, 10], [0.7, 8], [0.87, 4]] as const;
+  bands.forEach(([v, count], bi) => {
+    const lat = (v - 0.5) * Math.PI;
     for (let i = 0; i < count; i++) {
-      const x = (i + (row % 2) * 0.5) * (512 / count);
-      g.beginPath(); g.ellipse(x, y, 14, 12, 0, 0, Math.PI * 2); g.fill();
+      const x = ((i + (bi % 2) * 0.5) / count) * 1024;
+      g.beginPath();
+      g.ellipse(x, v * 512, 21 / Math.max(0.35, Math.cos(lat)), 21, 0, 0, Math.PI * 2);
+      g.fill();
     }
-  }
+  });
   return c;
 }
 
 function shadowTexture(): HTMLCanvasElement {
   const [c, g] = canvas(256, 256);
   const grad = g.createRadialGradient(128, 128, 0, 128, 128, 128);
-  grad.addColorStop(0, 'rgba(0,0,0,0.55)');
+  grad.addColorStop(0, 'rgba(0,0,0,0.6)');
+  grad.addColorStop(0.6, 'rgba(0,0,0,0.18)');
   grad.addColorStop(1, 'rgba(0,0,0,0)');
   g.fillStyle = grad;
   g.fillRect(0, 0, 256, 256);
@@ -302,7 +407,7 @@ export class PaddleScene {
 
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
-  private camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
+  private camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
   private root = new THREE.Group();
   private ball!: THREE.Mesh;
   private shadow!: THREE.Mesh;
@@ -318,10 +423,9 @@ export class PaddleScene {
   private explode = 0;
   private highlight = -1;
   private hover = -1;
-  private pointer = new THREE.Vector2(0, 0);   // -1..1
+  private pointer = new THREE.Vector2(0, 0);
   private pointerSmooth = new THREE.Vector2(0, 0);
   private hasPointer = false;
-  private autoYaw = 0.5;
   private userYaw = 0;
   private yawVelocity = 0;
   private dragging = false;
@@ -339,26 +443,27 @@ export class PaddleScene {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 1.1;
     this.renderer.domElement.style.touchAction = 'pan-y';
     host.appendChild(this.renderer.domElement);
 
-    // Studio reflections without loading an HDR file
+    // Soft studio reflections without loading an HDR file
     const pmrem = new THREE.PMREMGenerator(this.renderer);
-    const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    const envTex = pmrem.fromScene(new RoomEnvironment(), 0.03).texture;
     this.scene.environment = envTex;
+    this.scene.environmentIntensity = 0.85;
     this.disposables.push(envTex, pmrem);
 
-    this.camera.position.set(0, 0.7, 11);
+    this.camera.position.set(0, 0.5, 11.5);
     this.camera.lookAt(0, 0, 0);
 
-    const key = new THREE.DirectionalLight(0xffffff, 1.6);
-    key.position.set(3, 5, 6);
-    const rim = new THREE.PointLight(0xbef264, 30, 16);
-    rim.position.set(-4, 2, -3);
-    const fill = new THREE.PointLight(0x22c55e, 18, 14);
-    fill.position.set(4, -3, 3);
-    this.scene.add(key, rim, fill, new THREE.AmbientLight(0xffffff, 0.25));
+    const key = new THREE.DirectionalLight(0xffffff, 2.1);
+    key.position.set(-3.5, 5, 7);
+    const rim = new THREE.DirectionalLight(0xd8f7a0, 1.5);
+    rim.position.set(5, 2, -6);
+    const fill = new THREE.DirectionalLight(0xa8ffd0, 0.5);
+    fill.position.set(4, -4, 4);
+    this.scene.add(key, rim, fill);
 
     this.scene.add(this.root);
     this.build();
@@ -390,6 +495,12 @@ export class PaddleScene {
     cancelAnimationFrame(this.frameId);
   }
 
+  /** Renders a single frame at a fixed state (used for reduced motion and tests). */
+  renderOnce(explode = 0) {
+    this.explode = this.explodeTarget = clamp01(explode);
+    this.tick(0);
+  }
+
   dispose() {
     this.stop();
     this.resizeObs.disconnect();
@@ -402,7 +513,7 @@ export class PaddleScene {
       const m = o as THREE.Mesh;
       if (m.geometry) m.geometry.dispose();
       const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
-      mats.forEach((mat: any) => { mat.map?.dispose(); mat.dispose(); });
+      mats.forEach((mat: any) => { mat.map?.dispose(); mat.bumpMap?.dispose(); mat.dispose(); });
     });
     this.disposables.forEach((d) => d.dispose());
     this.renderer.dispose();
@@ -417,47 +528,53 @@ export class PaddleScene {
     return t;
   }
 
+  /** Maps a head-sized canvas onto an extruded head shape (cap UVs are in shape units). */
+  private faceTexture(c: HTMLCanvasElement, color = true): THREE.CanvasTexture {
+    const t = this.texture(c, color);
+    t.repeat.set(1 / W, 1 / HEAD_H);
+    t.offset.set(0.5, 0.5);
+    return t;
+  }
+
   private build() {
-    // Materials ---------------------------------------------------------
-    const graphicMap = this.texture(graphicTexture());
-    graphicMap.repeat.set(1 / W, 1 / H);   // ExtrudeGeometry caps use shape units as UVs
-    graphicMap.offset.set(0.5, 0.5);
-
+    // ---- materials
+    const printCanvas = printTexture();
     const carbonCanvas = carbonTexture();
-    const carbonMap = this.texture(carbonCanvas);
-    carbonMap.wrapS = carbonMap.wrapT = THREE.RepeatWrapping;
-    carbonMap.repeat.set(2.2, 2.2);
+    const weaveBump = this.faceTexture(carbonCanvas, false);
 
+    const mPrint = new THREE.MeshPhysicalMaterial({
+      map: this.faceTexture(printCanvas), bumpMap: weaveBump, bumpScale: 0.35,
+      roughness: 0.5, metalness: 0, clearcoat: 0.35, clearcoatRoughness: 0.35, envMapIntensity: 0.45,
+    });
+    const mCarbon = (canvasEl: HTMLCanvasElement) => new THREE.MeshPhysicalMaterial({
+      map: this.faceTexture(canvasEl), bumpMap: weaveBump, bumpScale: 0.8,
+      roughness: 0.55, metalness: 0.15, clearcoat: 0.35, clearcoatRoughness: 0.5,
+    });
+    const mSide = () => new THREE.MeshStandardMaterial({ color: 0xe8ece9, roughness: 0.6 });
+    const mCore = () => new THREE.MeshStandardMaterial({ color: 0xc9cec8, roughness: 0.78 });
+    const mGuard = () => new THREE.MeshPhysicalMaterial({ color: 0xf3f5f3, roughness: 0.38, clearcoat: 0.4, clearcoatRoughness: 0.3 });
+    const mThroat = () => new THREE.MeshPhysicalMaterial({ color: 0xf3f5f3, roughness: 0.32, clearcoat: 0.6, clearcoatRoughness: 0.25 });
     const gripMap = this.texture(gripTexture());
-    gripMap.wrapS = gripMap.wrapT = THREE.RepeatWrapping;
-    const capMap = this.texture(capTexture());
+    const gripBumpMap = this.texture(gripBump(), false);
+    [gripMap, gripBumpMap].forEach((t) => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(2, 2.4); });
+    const mGrip = () => new THREE.MeshStandardMaterial({ map: gripMap, bumpMap: gripBumpMap, bumpScale: 1.2, roughness: 0.92 });
+    const mHandle = () => new THREE.MeshStandardMaterial({ color: 0x2a2f2c, roughness: 0.75 });
+    const mCap = () => new THREE.MeshStandardMaterial({ color: 0xeef0ec, roughness: 0.5 });
 
-    const mGraphic = () => new THREE.MeshPhysicalMaterial({ map: graphicMap, roughness: 0.38, metalness: 0.05, clearcoat: 1, clearcoatRoughness: 0.12 });
-    const mCarbon = () => new THREE.MeshPhysicalMaterial({ map: carbonMap, color: 0xffffff, roughness: 0.32, metalness: 0.25, clearcoat: 1, clearcoatRoughness: 0.18 });
-    const mEdge = () => new THREE.MeshStandardMaterial({ color: 0x0a0d0c, roughness: 0.42, metalness: 0.2 });
-    const mCore = () => new THREE.MeshStandardMaterial({ color: 0x9aa39e, roughness: 0.7, metalness: 0.05 });
-    const mThroat = () => new THREE.MeshPhysicalMaterial({ color: 0x0c100e, roughness: 0.28, metalness: 0.3, clearcoat: 0.8 });
-    const mGrip = () => new THREE.MeshStandardMaterial({ map: gripMap, roughness: 0.85 });
-    const mHandle = () => new THREE.MeshStandardMaterial({ color: 0x151917, roughness: 0.5, metalness: 0.2 });
-    const mCap = () => new THREE.MeshStandardMaterial({ color: 0xf4f7f5, roughness: 0.45 });
-    const mCapLogo = () => new THREE.MeshStandardMaterial({ map: capMap, roughness: 0.45 });
-
-    // Part factory ------------------------------------------------------
-    const tilt = new THREE.Quaternion().setFromEuler(new THREE.Euler(-1.12, 0, 0));
+    // ---- part factory
+    const tilt = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.92, 0, 0));
     const upright = new THREE.Quaternion();
     const add = (
-      geo: THREE.BufferGeometry, mats: THREE.MeshStandardMaterial[],
+      object: THREE.Mesh, mats: THREE.MeshStandardMaterial[],
       aPos: [number, number, number], ePos: [number, number, number], eQuat: THREE.Quaternion,
-      anchor: [number, number, number], rotY = 0,
+      anchor: [number, number, number],
     ) => {
       const group = new THREE.Group();
-      const mesh = new THREE.Mesh(geo, mats.length === 1 ? mats[0] : mats);
-      mesh.rotation.y = rotY;
-      mesh.userData['part'] = this.parts.length;
-      group.add(mesh);
+      object.traverse((o) => { o.userData['part'] = this.parts.length; });
+      group.add(object);
       group.position.set(...aPos);
       this.root.add(group);
-      this.pickables.push(mesh);
+      this.pickables.push(object);
       this.parts.push({
         group, materials: mats,
         aPos: new THREE.Vector3(...aPos), aQuat: new THREE.Quaternion(),
@@ -465,42 +582,78 @@ export class PaddleScene {
         anchor: new THREE.Vector3(...anchor), glow: 0,
       });
     };
+    const mesh = (geo: THREE.BufferGeometry, mats: THREE.MeshStandardMaterial[]) =>
+      new THREE.Mesh(geo, mats.length === 1 ? mats[0] : mats);
 
-    const fy = FACE_Y;
-    const right = W / 2 + 0.04;
-    // 0 graphic face  (front cap gets the print, sides stay dark)
-    add(extrude(faceShape(0), 0.02), [mGraphic(), mEdge()], [0, fy, 0.12], [0, 3.15, 0], tilt, [right, 0, 0]);
-    // 1 carbon top
-    add(extrude(faceShape(0), 0.03), [mCarbon()], [0, fy, 0.095], [0, 2.5, 0], tilt, [right, 0, 0]);
+    const right = W / 2 + 0.03;
+    const zSkin = CORE_T / 2 + SKIN_T / 2;
+    const zPrint = CORE_T / 2 + SKIN_T + PRINT_T / 2;
+
+    // 0 face print
+    let m: THREE.MeshStandardMaterial[] = [mPrint, mSide()];
+    add(mesh(extrude(headShape(0.046), PRINT_T), m), m, [0, HEAD_Y, zPrint], [0, 3.55, 0], tilt, [right - 0.05, 0, 0]);
+    // 1 carbon skin, front
+    m = [mCarbon(carbonCanvas), mSide()];
+    add(mesh(extrude(headShape(0.02), SKIN_T), m), m, [0, HEAD_Y, zSkin], [0, 2.77, 0], tilt, [right - 0.03, 0, 0]);
     // 2 honeycomb core
-    add(extrude(honeycombShape(), 0.16, 0, 6), [mCore()], [0, fy, 0], [0, 1.75, 0], tilt, [right - 0.04, 0, 0]);
-    // 3 carbon bottom
-    add(extrude(faceShape(0), 0.03), [mCarbon()], [0, fy, -0.095], [0, 1.0, 0], tilt, [right, 0, 0]);
+    m = [mCore()];
+    add(mesh(extrude(honeycombShape(), CORE_T, 0, 6), m), m, [0, HEAD_Y, 0], [0, 1.99, 0], tilt, [right - 0.04, 0, 0]);
+    // 3 carbon skin, back (carries the mark)
+    m = [mCarbon(carbonCanvas), mSide()];
+    const backSkin = mesh(extrude(headShape(0.02), SKIN_T), m);
+    const backMark = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.72, 0.72),
+      new THREE.MeshStandardMaterial({ map: this.texture(backMarkTexture()), transparent: true, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -2 }),
+    );
+    backMark.rotation.y = Math.PI;                 // faces the back
+    backMark.position.set(0, 0.42, -SKIN_T / 2 - 0.001);
+    backSkin.add(backMark);
+    add(backSkin, m, [0, HEAD_Y, -zSkin], [0, 1.21, 0], tilt, [right - 0.03, 0, 0]);
     // 4 edge guard
-    add(extrude(edgeGuardShape(), 0.24, 0.018, 16), [mEdge()], [0, fy, 0], [0, 0.3, 0], tilt, [right + 0.02, 0, 0]);
-    // 5 throat
-    add(extrude(throatShape(), 0.2, 0.03), [mThroat()], [0, fy - H / 2 - 0.04, 0], [0, -0.42, 0],
-      new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.18, 0, 0)), [0.66, 0.06, 0]);
+    m = [mGuard()];
+    add(mesh(extrude(edgeGuardShape(), GUARD_T - 0.036, 0.018, 14), m), m, [0, HEAD_Y, 0], [0, 0.43, 0], tilt, [right + 0.02, 0, 0]);
+    // 5 throat collar
+    m = [mThroat()];
+    add(mesh(extrude(throatShape(), 0.176, 0.022, 14), m), m, [0, NECK_Y, 0], [0, -0.78, 0],
+      new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.2, 0, 0)), [0.5, 0.33, 0]);
     // 6 grip wrap
-    const grip = new THREE.CylinderGeometry(0.2, 0.212, 1.3, 40, 1, false);
-    add(grip, [mGrip()], [0, -1.75, 0], [0, -1.6, 0], upright, [0.22, 0, 0]);
-    // 7 handle core (octagonal, hidden inside the grip when assembled)
-    add(new THREE.CylinderGeometry(0.165, 0.165, 1.15, 8), [mHandle()], [0, -1.72, 0], [0, -2.95, 0], upright, [0.18, 0, 0], Math.PI / 8);
-    // 8 butt cap  (materials: side, top, bottom-with-logo)
-    add(new THREE.CylinderGeometry(0.215, 0.24, 0.15, 8), [mCap(), mCap(), mCapLogo()], [0, -2.45, 0], [0, -3.85, 0],
-      new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.6, 0, 0)), [0.25, 0, 0], Math.PI / 8);
+    const gripLen = HANDLE_LEN - 0.24;
+    const gripGeo = shapeHandle(new THREE.CylinderGeometry(1, 1, gripLen, 72, 120), 0.168, 0.142, gripLen, 9, 0.07);
+    m = [mGrip()];
+    add(mesh(gripGeo, m), m, [0, NECK_Y - 0.2 - gripLen / 2 + 0.01, 0], [0, -1.95, 0], upright, [0.19, 0, 0]);
+    // 7 handle core (hidden inside the grip until exploded)
+    const coreLen = gripLen - 0.06;
+    m = [mHandle()];
+    add(mesh(shapeHandle(new THREE.CylinderGeometry(1, 1, coreLen, 40, 1), 0.148, 0.122, coreLen), m), m,
+      [0, NECK_Y - 0.2 - gripLen / 2 + 0.01, 0], [0, -3.2, 0], upright, [0.16, 0, 0]);
+    // 8 butt cap
+    const capProfile = [
+      new THREE.Vector2(0.001, -0.07), new THREE.Vector2(0.9, -0.07), new THREE.Vector2(0.99, -0.052), new THREE.Vector2(1.03, -0.02),
+      new THREE.Vector2(1.03, 0.012), new THREE.Vector2(0.97, 0.05), new THREE.Vector2(0.9, 0.07), new THREE.Vector2(0.001, 0.07),
+    ];
+    const capGeo = shapeHandle(new THREE.LatheGeometry(capProfile, 56), 0.186, 0.158);
+    m = [mCap()];
+    const cap = mesh(capGeo, m);
+    const decal = new THREE.Mesh(
+      new THREE.CircleGeometry(0.105, 40),
+      new THREE.MeshStandardMaterial({ map: this.texture(capTexture()), roughness: 0.5 }),
+    );
+    decal.rotation.x = Math.PI / 2;      // faces down, out of the butt
+    decal.position.y = -0.0712;
+    cap.add(decal);
+    add(cap, m, [0, NECK_Y - HANDLE_LEN + 0.06, 0], [0, -4.12, 0],
+      new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.62, 0, 0)), [0.2, 0, 0]);
 
-    // Ball ----------------------------------------------------------------
-    const ballMap = this.texture(ballTexture());
+    // ---- ball
     this.ball = new THREE.Mesh(
-      new THREE.SphereGeometry(0.3, 48, 32),
-      new THREE.MeshPhysicalMaterial({ map: ballMap, roughness: 0.4, clearcoat: 0.6, emissive: 0x3f5a00, emissiveIntensity: 0.25 }),
+      new THREE.SphereGeometry(0.285, 48, 32),
+      new THREE.MeshStandardMaterial({ map: this.texture(ballTexture()), roughness: 0.55 }),
     );
     this.scene.add(this.ball);
 
-    // Soft contact shadow -------------------------------------------------
+    // ---- soft contact shadow
     this.shadow = new THREE.Mesh(
-      new THREE.PlaneGeometry(3, 1.1),
+      new THREE.PlaneGeometry(2.6, 0.8),
       new THREE.MeshBasicMaterial({ map: this.texture(shadowTexture(), false), transparent: true, depthWrite: false, opacity: 0.5 }),
     );
     this.shadow.rotation.x = -Math.PI / 2;
@@ -517,7 +670,7 @@ export class PaddleScene {
   }
 
   private onDown = (e: PointerEvent) => {
-    if (e.pointerType === 'touch') return; // touch keeps page scrolling
+    if (e.pointerType === 'touch') return; // touch keeps the page scrolling
     this.dragging = true;
     this.lastX = e.clientX;
     this.host.classList.add('grabbing');
@@ -552,59 +705,62 @@ export class PaddleScene {
     this.camera.updateProjectionMatrix();
 
     const aspect = w / h;
-    if (aspect >= 1.1) {
-      // Desktop: paddle on the right, exploded view slides left to make room for labels
-      this.layout = { aPos: new THREE.Vector3(2.0, -0.05, 0), aScale: 1, ePos: new THREE.Vector3(-1.5, 0.1, 0), eScale: 0.6 };
+    if (aspect >= 1.15) {
+      // Desktop: paddle on the right, exploded view moves left to make room for labels
+      this.layout = { aPos: new THREE.Vector3(2.35, -0.1, 0), aScale: 1.08, ePos: new THREE.Vector3(-0.15, -0.25, 0), eScale: 0.55 };
     } else if (aspect >= 0.75) {
       // Tablet
-      this.layout = { aPos: new THREE.Vector3(1.2, -0.3, 0), aScale: 0.85, ePos: new THREE.Vector3(-0.9, 0.1, 0), eScale: 0.55 };
+      this.layout = { aPos: new THREE.Vector3(1.25, -0.5, 0), aScale: 0.86, ePos: new THREE.Vector3(-0.6, -0.2, 0), eScale: 0.48 };
     } else {
-      // Phone: paddle sits under the headline, exploded view centered
-      this.layout = { aPos: new THREE.Vector3(0, -1.15, 0), aScale: 0.66, ePos: new THREE.Vector3(0, 0.45, 0), eScale: 0.5 };
+      // Phone: paddle sits below the headline, exploded view is centered
+      this.layout = { aPos: new THREE.Vector3(0.1, -1.3, 0), aScale: 0.7, ePos: new THREE.Vector3(0, 0.05, 0), eScale: 0.42 };
     }
+    if (!this.running) this.tick(0);
   }
 
   // -------------------------------------------------------------- frame
   private tick(dt: number) {
     this.time += dt;
     const L = this.layout;
+    if (!L) return;
 
-    this.explode = damp(this.explode, this.explodeTarget, 6, dt);
+    this.explode = dt > 0 ? damp(this.explode, this.explodeTarget, 6, dt) : this.explodeTarget;
     const e = this.explode;
     const eEase = easeInOut(e);
+    const still = this.reducedMotion;
 
-    // Pointer smoothing (parallax)
+    // Pointer parallax
     const px = this.hasPointer ? this.pointer.x : 0;
     const py = this.hasPointer ? this.pointer.y : 0;
     this.pointerSmooth.x = damp(this.pointerSmooth.x, px, 4, dt);
     this.pointerSmooth.y = damp(this.pointerSmooth.y, py, 4, dt);
 
-    // Yaw: idle spin when assembled, settle into a 3/4 view when exploded
+    // Drag inertia; when exploded the view settles back to a readable angle
     if (!this.dragging) {
       this.userYaw += this.yawVelocity;
       this.yawVelocity *= Math.pow(0.04, dt);
-      if (e > 0.02) this.userYaw = damp(this.userYaw, THREE.MathUtils.clamp(this.userYaw, -0.6, 0.6), 3, dt);
+      if (e > 0.05) {
+        const nearest = Math.round(this.userYaw / (Math.PI * 2)) * Math.PI * 2;
+        this.userYaw = damp(this.userYaw, nearest, 3, dt);
+      }
     }
-    if (e < 0.02 && !this.reducedMotion) {
-      this.autoYaw += dt * 0.45;
-    } else {
-      const nearest = Math.round(this.autoYaw / (Math.PI * 2)) * Math.PI * 2;
-      this.autoYaw = damp(this.autoYaw, nearest, 3, dt);
-    }
-    const yaw = this.autoYaw + this.userYaw + eEase * -0.42 + this.pointerSmooth.x * 0.35;
-    const pitch = -this.pointerSmooth.y * 0.18 * (1 - eEase * 0.5);
-    const float = this.reducedMotion ? 0 : Math.sin(this.time * 1.4) * 0.08 * (1 - eEase * 0.6);
+
+    // Assembled: a slow three-quarter sway. Exploded: fixed three-quarter view.
+    const sway = still ? 0 : Math.sin(this.time * 0.55) * 0.34;
+    const yaw = (-0.52 + sway) * (1 - eEase) + -0.4 * eEase + this.userYaw + this.pointerSmooth.x * 0.22;
+    const pitch = (0.06 - this.pointerSmooth.y * 0.14) * (1 - eEase * 0.6);
+    const float = still ? 0 : Math.sin(this.time * 1.2) * 0.06 * (1 - eEase * 0.7);
 
     this.root.position.lerpVectors(L.aPos, L.ePos, eEase);
     this.root.position.y += float;
     const scale = THREE.MathUtils.lerp(L.aScale, L.eScale, eEase);
     this.root.scale.setScalar(scale);
-    this.root.rotation.set(pitch, yaw, (1 - eEase) * 0.12);
+    this.root.rotation.set(pitch, yaw, (1 - eEase) * 0.2);
 
     // Hover picking (only when exploded and a mouse is present)
     if (this.hasPointer && e > 0.75 && !this.dragging) {
       this.raycaster.setFromCamera(this.pointer, this.camera);
-      const hit = this.raycaster.intersectObjects(this.pickables, false)[0];
+      const hit = this.raycaster.intersectObjects(this.pickables, true)[0];
       const idx = hit ? (hit.object.userData['part'] as number) : -1;
       if (idx !== this.hover) { this.hover = idx; this.onHover?.(idx); }
     } else if (this.hover !== -1) {
@@ -620,28 +776,27 @@ export class PaddleScene {
       p.group.position.lerpVectors(p.aPos, p.ePos, t);
       p.group.quaternion.slerpQuaternions(p.aQuat, p.eQuat, t);
 
-      // Active layer slides toward its label and glows
-      p.glow = damp(p.glow, i === active && e > 0.6 ? 1 : 0, 8, dt);
-      p.group.position.x += p.glow * 0.35;
-      const pulse = p.glow * (0.55 + Math.sin(this.time * 5) * 0.15);
-      p.materials.forEach((m) => { m.emissive.setRGB(0.45 * pulse, 0.8 * pulse, 0.12 * pulse); });
+      // The active part slides toward its label and glows
+      p.glow = dt > 0 ? damp(p.glow, i === active && e > 0.6 ? 1 : 0, 8, dt) : (i === active && e > 0.6 ? 1 : 0);
+      p.group.position.x += p.glow * 0.3;
+      const pulse = p.glow * (0.4 + (still ? 0 : Math.sin(this.time * 5) * 0.1));
+      p.materials.forEach((mat) => { mat.emissive.setRGB(0.4 * pulse, 0.7 * pulse, 0.12 * pulse); });
     });
 
-    // Ball: bounces next to the assembled paddle, drops away when exploding
+    // Ball bounces beside the assembled paddle and drops away when the parts separate
     const ballOut = clamp01(e * 2.2);
-    const bounce = Math.abs(Math.sin(this.time * 2.2));
-    const bx = L.aPos.x + 1.25 * L.aScale;
-    const by = L.aPos.y - 0.4 * L.aScale + bounce * 1.25 * L.aScale - ballOut * 3;
-    this.ball.position.set(bx, by, 0.9);
-    this.ball.rotation.x += dt * 2.4;
-    this.ball.rotation.z += dt * 1.1;
+    const bounce = still ? 0.6 : Math.abs(Math.sin(this.time * 2.1));
+    const side = L.aPos.x > 1 ? -1.55 : 1.05;
+    this.ball.position.set(L.aPos.x + side * L.aScale, L.aPos.y + (-0.35 + bounce * 1.5) * L.aScale - ballOut * 3.2, 1.0);
+    this.ball.rotation.x += dt * 2.2;
+    this.ball.rotation.z += dt * 0.9;
     this.ball.scale.setScalar(Math.max(0.0001, (1 - ballOut) * L.aScale));
 
     // Shadow under the paddle
     const sMat = this.shadow.material as THREE.MeshBasicMaterial;
-    this.shadow.position.set(this.root.position.x, this.root.position.y - 2.7 * scale - 0.35 - float, 0);
-    this.shadow.scale.setScalar(scale * (1 - float * 0.8));
-    sMat.opacity = 0.45 * (1 - eEase);
+    this.shadow.position.set(this.root.position.x, L.aPos.y - 2.42 * L.aScale, 0);
+    this.shadow.scale.setScalar(scale * (1 - float * 1.2));
+    sMat.opacity = 0.5 * (1 - eEase);
 
     this.renderer.render(this.scene, this.camera);
 

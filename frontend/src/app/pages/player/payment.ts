@@ -4,175 +4,147 @@ import { RouterLink } from '@angular/router';
 import { ApiService, errMsg } from '../../core/api.service';
 import { ToastService } from '../../core/toast.service';
 import { Booking } from '../../core/models';
-import { HourPipe, NiceDatePipe, PesoPipe, StatusPipe } from '../../shared/pipes';
+import { HourPipe, NiceDatePipe, PesoPipe } from '../../shared/pipes';
+import { StatusBadge } from '../../shared/status-badge';
 
 @Component({
   selector: 'pb-payment',
   standalone: true,
-  imports: [FormsModule, RouterLink, PesoPipe, HourPipe, NiceDatePipe, StatusPipe],
+  imports: [FormsModule, RouterLink, PesoPipe, HourPipe, NiceDatePipe, StatusBadge],
   template: `
-    <section class="page-hero">
-      <div class="container">
-        <a routerLink="/my-bookings" class="back">← My bookings</a>
-        <h1>Pay with GCash</h1>
-        <p>Scan the QR below with your GCash app, then upload your receipt.</p>
-      </div>
-    </section>
+    <div class="container page pay-page">
+      <a routerLink="/my-bookings" class="small fw-semibold d-inline-flex align-items-center gap-1 mb-2"><i class="bi bi-chevron-left"></i>My bookings</a>
 
-    <div class="container wrap">
       @if (loading()) {
-        <div class="center-state"><span class="spinner"></span></div>
+        <div class="skeleton mb-3" style="height: 28px; width: 50%"></div><div class="skeleton" style="height: 360px"></div>
       } @else {
-       @if (b(); as b) {
-        <div class="grid">
-          <!-- QR card -->
-          <div class="qr-card">
-            <div class="qr-top">
-              <span class="gcash">G<b>Cash</b></span>
-              <span class="amount-label">Amount to pay</span>
-              <span class="amount">{{ b.total_amount | peso }}</span>
-            </div>
-            <div class="qr-frame">
-              @if (b.gcash_qr) {
-                <img [src]="api.asset(b.gcash_qr)" alt="GCash QR code" />
+        @if (b(); as b) {
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+            <h1 class="page-title mb-0">{{ done() ? 'Payment sent' : needsPayment() ? 'Pay with GCash' : 'Booking details' }}</h1>
+            <pb-status [status]="b.status" />
+          </div>
+
+          <!-- Hold timer -->
+          @if (needsPayment() && b.status === 'pending_payment' && !done()) {
+            <div class="alert d-flex align-items-center gap-2 py-2" [class.alert-warning]="secondsLeft() > 0" [class.alert-danger]="secondsLeft() <= 0" role="status">
+              <i class="bi bi-stopwatch"></i>
+              @if (secondsLeft() > 0) {
+                <span>Your slot is held for <b class="tnum">{{ countdown() }}</b>. Pay before the timer ends.</span>
               } @else {
-                <div class="no-qr"><b>No QR uploaded yet</b><span>Send the exact amount to the GCash number below.</span></div>
+                <span>The hold has ended. You can still pay if nobody else has booked this slot.</span>
               }
-              <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
             </div>
-            <div class="payee">
-              <div><small>Account name</small><b>{{ b.gcash_name || '—' }}</b></div>
-              <div><small>GCash number</small><b class="mono">{{ b.gcash_number || '—' }}</b></div>
-            </div>
-            @if (b.paid_to_platform) { <p class="plat">Payment goes to PickleBook and is forwarded to the facility.</p> }
-          </div>
+          }
 
-          <!-- Details + upload -->
-          <div class="side">
-            <div class="card card-pad">
-              <div class="ref-row">
-                <div><small>Booking reference</small><b class="mono">{{ b.reference_code }}</b></div>
-                <span class="badge" [class]="'badge ' + b.status">{{ b.status | status }}</span>
-              </div>
-              <dl>
-                <div><dt>Facility</dt><dd>{{ b.facility_name }}</dd></div>
-                <div><dt>Court</dt><dd>{{ b.court_name }}</dd></div>
-                <div><dt>Date</dt><dd>{{ b.booking_date | niceDate }}</dd></div>
-                <div><dt>Time</dt><dd>{{ b.start_hour | hour }} – {{ b.end_hour | hour }}</dd></div>
-              </dl>
-              @if (needsPayment() && b.status === 'pending_payment') {
-                <div class="timer" [class.late]="secondsLeft() <= 0">
-                  @if (secondsLeft() > 0) {
-                    <span>Slot held for</span><b class="mono">{{ countdown() }}</b>
-                  } @else {
-                    <span>Hold expired. You can still pay if the slot is free.</span>
-                  }
+          <div class="row g-4">
+            <!-- Booking summary -->
+            <div class="col-12 col-lg-5 order-lg-2">
+              <div class="card">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between mb-3">
+                    <div><div class="small text-secondary">Reference</div><div class="fw-bold tnum">{{ b.reference_code }}</div></div>
+                    <div class="text-end"><div class="small text-secondary">Amount</div><div class="fw-bold fs-5 tnum">{{ b.total_amount | peso }}</div></div>
+                  </div>
+                  <ul class="list-unstyled small d-grid gap-2 mb-0">
+                    <li class="d-flex gap-2"><i class="bi bi-shop text-secondary"></i>{{ b.facility_name }} · {{ b.court_name }}</li>
+                    <li class="d-flex gap-2"><i class="bi bi-calendar3 text-secondary"></i>{{ b.booking_date | niceDate }}</li>
+                    <li class="d-flex gap-2"><i class="bi bi-clock text-secondary"></i>{{ b.start_hour | hour }} – {{ b.end_hour | hour }}</li>
+                    <li class="d-flex gap-2"><i class="bi bi-geo-alt text-secondary"></i>{{ b.address }}, {{ b.city }}</li>
+                  </ul>
                 </div>
-              }
+              </div>
             </div>
 
-            @if (done()) {
-              <div class="card card-pad success">
-                <div class="check">✓</div>
-                <h3>Payment submitted!</h3>
-                <p class="muted">The court owner will verify your GCash payment. We'll mark your booking as confirmed once it's checked.</p>
-                <a routerLink="/my-bookings" class="btn btn-primary btn-block" style="margin-top: 18px">View my bookings</a>
-              </div>
-            } @else if (needsPayment()) {
-              <form class="card card-pad" (ngSubmit)="submit()">
-                <h3>Upload your receipt</h3>
-                <ol class="howto">
-                  <li>Open GCash and tap <b>Pay QR</b>, then scan the code.</li>
-                  <li>Pay exactly <b>{{ b.total_amount | peso }}</b>.</li>
-                  <li>Screenshot the receipt and upload it here with the reference number.</li>
-                </ol>
+            <div class="col-12 col-lg-7 order-lg-1">
+              @if (done()) {
+                <div class="card"><div class="card-body text-center py-5">
+                  <div class="done-icon mb-3"><i class="bi bi-check-lg"></i></div>
+                  <h2 class="h5">We sent your receipt to the facility</h2>
+                  <p class="text-secondary">Your booking will show as Confirmed once the owner checks your payment. This usually takes a few minutes during opening hours.</p>
+                  <a routerLink="/my-bookings" class="btn btn-primary">View my bookings</a>
+                </div></div>
+              } @else if (needsPayment()) {
                 @if (b.status === 'rejected') {
-                  <div class="alert warn" style="margin-bottom: 14px">Your last payment was rejected by the owner. Please check the amount and upload a new receipt.</div>
+                  <div class="alert alert-danger small"><i class="bi bi-x-circle me-2"></i>The facility couldn't match your last payment. Check the amount and upload the correct receipt.</div>
                 }
-                <div class="field">
-                  <label for="ref">GCash reference no.</label>
-                  <input id="ref" class="input mono" name="ref" [(ngModel)]="reference" inputmode="numeric" placeholder="e.g. 1012 345 678901" maxlength="20">
+
+                <!-- Step 1: QR -->
+                <div class="card mb-3">
+                  <div class="card-body">
+                    <div class="d-flex gap-2 align-items-center mb-3"><span class="step-no">1</span><h2 class="h6 mb-0">Scan and pay in GCash</h2></div>
+                    <div class="qr-wrap mx-auto">
+                      @if (b.gcash_qr) {
+                        <img [src]="api.asset(b.gcash_qr)" alt="GCash QR code for {{ b.gcash_name || b.facility_name }}" class="w-100 h-100">
+                      } @else {
+                        <div class="text-center text-secondary small p-3"><i class="bi bi-qr-code fs-1 d-block mb-2"></i>No QR uploaded. Send to the GCash number below.</div>
+                      }
+                    </div>
+                    <div class="row g-2 mt-3 small">
+                      <div class="col-6"><div class="text-secondary">Account name</div><div class="fw-bold text-break">{{ b.gcash_name || '—' }}</div></div>
+                      <div class="col-6"><div class="text-secondary">GCash number</div>
+                        <div class="fw-bold tnum d-flex align-items-center gap-1">{{ b.gcash_number || '—' }}
+                          @if (b.gcash_number) { <button type="button" class="btn btn-link btn-sm p-0" (click)="copy(b.gcash_number!)" aria-label="Copy GCash number"><i class="bi bi-copy"></i></button> }
+                        </div>
+                      </div>
+                    </div>
+                    <p class="small text-secondary mt-3 mb-0">In GCash, tap <b>Pay QR</b> and scan the code, or use <b>Send Money</b> with the number. Pay exactly <b>{{ b.total_amount | peso }}</b>.
+                      On a phone, take a screenshot of the QR and upload it in GCash.</p>
+                  </div>
                 </div>
-                <label class="drop" [class.has]="preview()" (dragover)="$event.preventDefault()" (drop)="onDrop($event)">
-                  <input type="file" accept="image/png,image/jpeg,image/webp" (change)="onFile($event)">
-                  @if (preview()) {
-                    <img [src]="preview()" alt="Receipt preview">
-                    <span class="change">Tap to change</span>
-                  } @else {
-                    <span class="up">⇪</span>
-                    <b>Upload receipt screenshot</b>
-                    <small>PNG or JPG, max 5 MB</small>
-                  }
-                </label>
-                <button class="btn btn-primary btn-lg btn-block" [disabled]="submitting()">
-                  @if (submitting()) { <span class="spinner"></span> } Submit payment
-                </button>
-              </form>
-            } @else {
-              <div class="card card-pad">
-                <p class="muted">This booking is <b>{{ b.status | status }}</b> and doesn't need payment.</p>
-                <a routerLink="/my-bookings" class="btn btn-outline btn-block" style="margin-top: 14px">Back to my bookings</a>
-              </div>
-            }
+
+                <!-- Step 2: receipt -->
+                <form class="card" (ngSubmit)="submit()" novalidate>
+                  <div class="card-body">
+                    <div class="d-flex gap-2 align-items-center mb-3"><span class="step-no">2</span><h2 class="h6 mb-0">Upload your receipt</h2></div>
+                    <div class="mb-3">
+                      <label class="form-label" for="ref">GCash reference number</label>
+                      <input id="ref" class="form-control tnum" name="ref" [(ngModel)]="reference" inputmode="numeric" autocomplete="off" maxlength="20" placeholder="13-digit number on your receipt">
+                    </div>
+                    <label class="form-label" for="proof">Receipt screenshot</label>
+                    <label class="drop mb-3" for="proof" (dragover)="$event.preventDefault()" (drop)="onDrop($event)">
+                      @if (preview()) {
+                        <img [src]="preview()" alt="Receipt preview" class="preview">
+                        <span class="small fw-semibold text-primary mt-2"><i class="bi bi-arrow-repeat me-1"></i>Choose a different image</span>
+                      } @else {
+                        <i class="bi bi-image fs-2 text-secondary"></i>
+                        <span class="fw-semibold">Tap to choose a screenshot</span>
+                        <span class="small text-secondary">PNG or JPG, up to 5 MB</span>
+                      }
+                    </label>
+                    <input id="proof" type="file" class="visually-hidden" accept="image/png,image/jpeg,image/webp" (change)="onFile($event)">
+                    <button class="btn btn-primary btn-lg w-100" [disabled]="submitting()">
+                      @if (submitting()) { <span class="spinner-border" aria-hidden="true"></span> } Submit payment
+                    </button>
+                  </div>
+                </form>
+              } @else {
+                <div class="card"><div class="card-body">
+                  <p class="mb-3">This booking doesn't need a payment right now.</p>
+                  @if (b.status === 'for_verification') { <p class="small text-secondary">We're waiting for the facility to check your receipt.</p> }
+                  <a routerLink="/my-bookings" class="btn btn-light border">Back to my bookings</a>
+                </div></div>
+              }
+            </div>
           </div>
-        </div>
-       } @else {
-        <div class="empty"><h3>Booking not found</h3><a routerLink="/my-bookings" class="btn btn-primary" style="margin-top: 14px">My bookings</a></div>
-       }
+        } @else {
+          <div class="card"><div class="empty-state">
+            <i class="bi bi-receipt"></i>
+            <h3>Booking not found</h3>
+            <a routerLink="/my-bookings" class="btn btn-primary mt-2">My bookings</a>
+          </div></div>
+        }
       }
     </div>
   `,
   styles: [`
-    .back { display: inline-block; color: var(--lime); font-weight: 700; font-size: 14px; margin-bottom: 14px; }
-    .wrap { padding-top: 24px; padding-bottom: 80px; }
-    .grid { display: grid; gap: 20px; align-items: start; }
-    @media (min-width: 900px) { .grid { grid-template-columns: 420px 1fr; } .qr-card { position: sticky; top: calc(var(--nav-h) + 16px); } }
-
-    .qr-card { background: linear-gradient(170deg, #0a5bd3, #0047b3); color: #fff; border-radius: 28px; padding: 22px; box-shadow: var(--shadow-lg); text-align: center; }
-    .qr-top { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-bottom: 18px; }
-    .gcash { font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: -.03em; }
-    .gcash b { font-weight: 500; }
-    .amount-label { font-size: 12px; opacity: .75; margin-top: 8px; }
-    .amount { font-family: var(--font-display); font-size: 38px; font-weight: 700; }
-    .qr-frame { position: relative; background: #fff; border-radius: 22px; padding: 18px; aspect-ratio: 1; display: grid; place-items: center; max-width: 320px; margin: 0 auto; }
-    .qr-frame img { width: 100%; height: 100%; object-fit: contain; }
-    .c { position: absolute; width: 26px; height: 26px; border: 4px solid var(--lime); }
-    .tl { left: -6px; top: -6px; border-right: 0; border-bottom: 0; border-radius: 12px 0 0 0; }
-    .tr { right: -6px; top: -6px; border-left: 0; border-bottom: 0; border-radius: 0 12px 0 0; }
-    .bl { left: -6px; bottom: -6px; border-right: 0; border-top: 0; border-radius: 0 0 0 12px; }
-    .br { right: -6px; bottom: -6px; border-left: 0; border-top: 0; border-radius: 0 0 12px 0; }
-    .no-qr { color: var(--ink); display: flex; flex-direction: column; gap: 6px; padding: 20px; }
-    .no-qr span { font-size: 13px; color: var(--muted); }
-    .payee { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; text-align: left; }
-    .payee div { background: rgba(255,255,255,.12); border-radius: 14px; padding: 10px 12px; }
-    .payee small { display: block; font-size: 11px; opacity: .75; }
-    .payee b { font-size: 14.5px; word-break: break-word; }
-    .plat { font-size: 12px; opacity: .8; margin-top: 12px; }
-
-    .side { display: grid; gap: 16px; }
-    .ref-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 14px; }
-    .ref-row small { display: block; font-size: 12px; color: var(--muted); }
-    .ref-row b { font-family: var(--font-display); font-size: 20px; }
-    dl { margin: 0; display: grid; gap: 8px; }
-    dl div { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; }
-    dt { color: var(--muted); }
-    dd { margin: 0; font-weight: 700; text-align: right; }
-    .timer { margin-top: 16px; padding: 12px 14px; border-radius: 14px; background: #fef3c7; color: #92400e; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; }
-    .timer b { font-size: 20px; font-family: var(--font-display); }
-    .timer.late { background: #fee2e2; color: #991b1b; }
-    h3 { font-size: 18px; margin-bottom: 12px; }
-    .howto { margin: 0 0 18px; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; color: var(--ink-2); }
-    .drop { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 160px; padding: 18px; margin-bottom: 18px;
-      border: 2px dashed var(--line); border-radius: 18px; background: var(--mint); cursor: pointer; text-align: center; transition: border-color .2s, background .2s; overflow: hidden; }
-    .drop:hover { border-color: var(--court-2); background: #fff; }
-    .drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-    .drop .up { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--forest); color: var(--lime); font-size: 22px; margin-bottom: 6px; }
-    .drop small { color: var(--muted); font-size: 12px; }
-    .drop.has { padding: 8px; }
-    .drop img { max-height: 260px; border-radius: 12px; }
-    .change { position: absolute; bottom: 12px; padding: 4px 10px; border-radius: 999px; background: rgba(4,20,13,.7); color: #fff; font-size: 12px; font-weight: 700; }
-    .success { text-align: center; }
-    .check { width: 64px; height: 64px; margin: 4px auto 14px; border-radius: 50%; background: var(--lime); color: var(--ink); display: grid; place-items: center; font-size: 30px; font-weight: 800; animation: pop .4s var(--ease); }
+    .step-no { width: 1.6rem; height: 1.6rem; border-radius: 50%; display: grid; place-items: center; background: var(--pb-pine); color: #fff; font-size: 0.8125rem; font-weight: 800; }
+    .qr-wrap { width: min(260px, 100%); aspect-ratio: 1; border: 1px solid var(--pb-line); border-radius: 0.75rem; padding: 0.75rem; display: grid; place-items: center; background: #fff; }
+    .qr-wrap img { object-fit: contain; }
+    .drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; min-height: 9rem; padding: 1rem; width: 100%;
+      border: 1.5px dashed #c3cfc7; border-radius: 0.75rem; background: var(--pb-bg); cursor: pointer; text-align: center; }
+    .drop:hover { border-color: var(--pb-green); }
+    .preview { max-height: 14rem; max-width: 100%; border-radius: 0.5rem; }
+    .done-icon { width: 3.5rem; height: 3.5rem; margin: 0 auto; border-radius: 50%; display: grid; place-items: center; background: var(--pb-green-50); color: var(--pb-green); font-size: 1.75rem; }
   `],
 })
 export class PaymentPage implements OnInit, OnDestroy {
@@ -184,11 +156,11 @@ export class PaymentPage implements OnInit, OnDestroy {
   loading = signal(true);
   submitting = signal(false);
   done = signal(false);
-  preview = signal<string>('');
+  preview = signal('');
   secondsLeft = signal(0);
   reference = '';
   private file: File | null = null;
-  private timer: any;
+  private timer: ReturnType<typeof setInterval> | undefined;
 
   needsPayment = computed(() => ['pending_payment', 'rejected'].includes(this.b()?.status || ''));
   countdown = computed(() => {
@@ -204,11 +176,15 @@ export class PaymentPage implements OnInit, OnDestroy {
         this.secondsLeft.set(Number(b.hold_seconds || 0));
         this.timer = setInterval(() => this.secondsLeft.update((s) => s - 1), 1000);
       },
-      error: (e) => { this.loading.set(false); this.toast.error(errMsg(e)); },
+      error: (e) => { this.loading.set(false); if (e.status !== 404) this.toast.error(errMsg(e)); },
     });
   }
 
   ngOnDestroy() { clearInterval(this.timer); }
+
+  copy(text: string) {
+    navigator.clipboard?.writeText(text).then(() => this.toast.success('GCash number copied'), () => {});
+  }
 
   onFile(e: Event) {
     const f = (e.target as HTMLInputElement).files?.[0];
@@ -222,8 +198,8 @@ export class PaymentPage implements OnInit, OnDestroy {
   }
 
   private setFile(f: File) {
-    if (!/^image\/(png|jpe?g|webp)$/.test(f.type)) { this.toast.error('Please upload a PNG, JPG or WEBP image.'); return; }
-    if (f.size > 5 * 1024 * 1024) { this.toast.error('Image must be 5 MB or smaller.'); return; }
+    if (!/^image\/(png|jpe?g|webp)$/.test(f.type)) { this.toast.error('Choose a PNG, JPG or WEBP image.'); return; }
+    if (f.size > 5 * 1024 * 1024) { this.toast.error('That image is larger than 5 MB.'); return; }
     this.file = f;
     const reader = new FileReader();
     reader.onload = () => this.preview.set(reader.result as string);
@@ -232,15 +208,15 @@ export class PaymentPage implements OnInit, OnDestroy {
 
   submit() {
     const ref = this.reference.replace(/\s/g, '');
-    if (!/^\d{8,20}$/.test(ref)) { this.toast.error('Enter the GCash reference number (numbers only).'); return; }
-    if (!this.file) { this.toast.error('Upload a screenshot of your GCash receipt.'); return; }
+    if (!/^\d{8,20}$/.test(ref)) { this.toast.error('Enter the reference number from your GCash receipt (numbers only).'); return; }
+    if (!this.file) { this.toast.error('Add a screenshot of your GCash receipt.'); return; }
     this.submitting.set(true);
     this.api.submitPayment(this.b()!.id, ref, this.file).subscribe({
-      next: (r) => {
+      next: () => {
         this.submitting.set(false);
         this.done.set(true);
         this.b.update((b) => (b ? { ...b, status: 'for_verification' } : b));
-        this.toast.success(r.message);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       },
       error: (e) => { this.submitting.set(false); this.toast.error(errMsg(e)); },
     });

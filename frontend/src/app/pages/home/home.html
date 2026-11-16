@@ -1,52 +1,39 @@
-<!-- ============ 3D HERO (scroll to explode the paddle) ============ -->
+<!-- ============ HERO: interactive 3D paddle (scroll to take it apart) ============ -->
 <section class="hero" #hero>
   <div class="stage" #stage>
-    <div class="bg">
-      <div class="glow g1"></div>
-      <div class="glow g2"></div>
-      <div class="court-floor"><div class="lines"></div></div>
-      <div class="grain"></div>
-    </div>
-
-    <div class="canvas-host" #host aria-label="Interactive 3D pickleball paddle. Drag to rotate, scroll to explode." role="img"></div>
-
-    @if (webglFailed()) {
-      <div class="fallback"><div class="fallback-paddle"><span>PB</span></div></div>
-    }
+    <div class="canvas-host" #host role="img" aria-label="3D pickleball paddle. Drag to rotate. Scroll to see its parts."></div>
 
     <svg class="leaders" aria-hidden="true">
       @for (p of parts; track p.name) { <path #line d="" /> }
     </svg>
 
-    <!-- Intro copy -->
-    <div class="copy-wrap">
-      <div class="intro">
-        <span class="pill"><i></i> Now booking in Cebu &amp; Mandaue</span>
-        <h1>Book the court.<br><em>Skip the chat.</em></h1>
-        <p class="lead">See live availability for pickleball courts near you, reserve your slot in seconds and pay with GCash. No more waiting for a reply.</p>
-        <div class="cta">
-          <a routerLink="/courts" class="btn btn-lime btn-lg">Find a court <span aria-hidden="true">→</span></a>
-          <button class="btn btn-ghost-light btn-lg" (click)="scrollToLayers()">See how it's built</button>
+    <div class="copy">
+      <div class="container h-100 position-relative">
+        <div class="intro">
+          <p class="kicker"><i class="bi bi-geo-alt-fill me-1"></i>Cebu City · Mandaue City</p>
+          <h1>Book a pickleball court in under a minute.</h1>
+          <p class="lead">See which courts are open, reserve your hours and pay with GCash. No need to message the facility and wait.</p>
+          <div class="cta d-flex flex-wrap gap-2">
+            <a routerLink="/courts" class="btn btn-lime btn-lg"><i class="bi bi-search me-2"></i>Find a court</a>
+            @if (!auth.isLoggedIn()) {
+              <a routerLink="/register" [queryParams]="{ as: 'owner' }" class="btn btn-outline-light btn-lg">List your court</a>
+            }
+          </div>
         </div>
-        <div class="trust">
-          <div><b>24/7</b><span>online booking</span></div>
-          <div><b>0</b><span>double bookings</span></div>
-          <div><b>GCash</b><span>QR payments</span></div>
-        </div>
-      </div>
 
-      <div class="layers-title">
-        <span class="eyebrow light">Built in layers</span>
-        <h2>Every layer engineered.<br>Every booking handled.</h2>
-        <p>Like a pro carbon paddle, PickleBook is built from layers that work together. Hover a layer or keep scrolling.</p>
+        <div class="layers-title">
+          <p class="kicker">Inside PickleBook</p>
+          <h2>Built in layers, like the paddle.</h2>
+          <p class="d-none d-md-block">Each part of the paddle stands for one part of the system. Scroll, or point at a layer.</p>
+        </div>
       </div>
     </div>
 
-    <!-- Desktop labels (like an exploded diagram) -->
+    <!-- Desktop: labels beside the exploded paddle -->
     <ol class="labels">
       @for (p of parts; track p.name; let i = $index) {
         <li #label>
-          <span class="num">{{ (i + 1).toString().padStart(2, '0') }}</span>
+          <span class="num">{{ i + 1 }}</span>
           <div>
             <small>{{ p.name }}</small>
             <b>{{ p.feature }}</b>
@@ -56,120 +43,88 @@
       }
     </ol>
 
-    <!-- Mobile: one card that follows the highlighted layer -->
+    <!-- Phone: one card that follows the highlighted layer -->
     <div class="mobile-card" #mobileCard>
-      <span class="mc-num">01</span>
-      <div>
+      <span class="mc-num">1</span>
+      <div class="min-w-0">
         <small class="mc-name">{{ parts[0].name }}</small>
         <b class="mc-feature">{{ parts[0].feature }}</b>
         <p class="mc-desc">{{ parts[0].desc }}</p>
       </div>
     </div>
 
-    <div class="scroll-hint"><span class="mouse"><i></i></span> Scroll to take it apart · drag to spin</div>
-  </div>
-</section>
-
-<!-- ============ OLD WAY vs PICKLEBOOK ============ -->
-<section class="section why" id="why">
-  <div class="container why-grid">
-    <div class="why-copy">
-      <span class="eyebrow">The problem</span>
-      <h2>Booking a court shouldn't take twelve messages.</h2>
-      <p class="muted">Most courts still take reservations through Messenger, calls and paper logs. Players wait for replies, owners juggle schedules, and double bookings happen on busy weekends.</p>
-      <ul class="checks">
-        <li>Real-time schedules for every court</li>
-        <li>Instant reservation with a booking reference</li>
-        <li>Pay through the court's own GCash QR</li>
-      </ul>
-    </div>
-
-    <div class="compare">
-      <div class="phone old">
-        <div class="phone-head"><span class="avatar">CT</span><div><b>Court Tambayan</b><small>Active 3h ago</small></div></div>
-        <div class="bubble me">Hi po! Available pa court this Sat 7PM?</div>
-        <div class="bubble me">For 4 players po</div>
-        <div class="bubble them">Wait lang po, check ko</div>
-        <div class="time">2 hours later</div>
-        <div class="bubble them">Sorry po fully booked na 😅</div>
-        <span class="tag bad">The old way</span>
-      </div>
-
-      <div class="phone new">
-        <div class="slot-head"><b>Dink Yard Cebu</b><small>Sat, Nov 8 · Court 2</small></div>
-        <div class="slot-grid">
-          <span class="s off">5 PM</span><span class="s off">6 PM</span><span class="s pick">7 PM</span>
-          <span class="s pick">8 PM</span><span class="s">9 PM</span><span class="s off">10 PM</span>
-        </div>
-        <div class="slot-total"><span>2 hours</span><b>₱800</b></div>
-        <div class="slot-btn">Reserved ✓ PB-7K3Q9A</div>
-        <span class="tag good">With PickleBook · 20 seconds</span>
-      </div>
-    </div>
+    <div class="scroll-hint"><i class="bi bi-chevron-double-down"></i> Scroll to take the paddle apart</div>
   </div>
 </section>
 
 <!-- ============ HOW IT WORKS ============ -->
-<section class="section how" id="how">
+<section class="section bg-white" id="how">
   <div class="container">
-    <div class="center-head">
-      <span class="eyebrow">How it works</span>
-      <h2>From couch to court in four steps</h2>
+    <div class="section-head">
+      <h2>How booking works</h2>
+      <p>Three steps. Most players finish in about a minute.</p>
     </div>
-    <ol class="steps">
-      <li>
-        <span class="step-num">1</span>
-        <div class="step-icon">⌕</div>
-        <h3>Find a court</h3>
-        <p>Browse partner facilities, compare rates and opening hours.</p>
-      </li>
-      <li>
-        <span class="step-num">2</span>
-        <div class="step-icon">▦</div>
-        <h3>Pick your time</h3>
-        <p>Tap open slots on the live schedule. Booked hours are greyed out.</p>
-      </li>
-      <li>
-        <span class="step-num">3</span>
-        <div class="step-icon qr"><i></i><i></i><i></i><i></i></div>
-        <h3>Scan &amp; pay</h3>
-        <p>Scan the court's GCash QR, then upload your receipt and reference number.</p>
-      </li>
-      <li>
-        <span class="step-num">4</span>
-        <div class="step-icon">✓</div>
-        <h3>Play</h3>
-        <p>The owner confirms your payment and your slot is locked in.</p>
-      </li>
-    </ol>
+    <div class="row g-3 g-lg-4">
+      <div class="col-12 col-md-4">
+        <div class="step">
+          <div class="icon-tile dark"><i class="bi bi-search"></i></div>
+          <div>
+            <h3>1. Pick a court</h3>
+            <p>Browse partner facilities and compare hourly rates and opening hours.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="step">
+          <div class="icon-tile dark"><i class="bi bi-calendar2-check"></i></div>
+          <div>
+            <h3>2. Choose your time</h3>
+            <p>Open hours are shown live. Tap a start time and how long you want to play.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="step">
+          <div class="icon-tile dark"><i class="bi bi-qr-code-scan"></i></div>
+          <div>
+            <h3>3. Pay with GCash</h3>
+            <p>Pay the facility's GCash QR and upload your receipt. The owner confirms your booking.</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
-<!-- ============ FEATURED COURTS ============ -->
+<!-- ============ COURTS ============ -->
 @if (featured().length) {
-  <section class="section featured">
+  <section class="section">
     <div class="container">
-      <div class="row-head">
-        <div>
-          <span class="eyebrow">Partner courts</span>
-          <h2>Play near you</h2>
+      <div class="d-flex align-items-end justify-content-between gap-3 mb-3 mb-lg-4">
+        <div class="section-head mb-0">
+          <h2>Courts on PickleBook</h2>
         </div>
-        <a routerLink="/courts" class="btn btn-outline">See all courts →</a>
+        <a routerLink="/courts" class="fw-bold text-nowrap">See all <i class="bi bi-arrow-right"></i></a>
       </div>
-      <div class="fac-grid">
+      <div class="row g-3 g-lg-4">
         @for (f of featured(); track f.id) {
-          <a class="fac-card" [routerLink]="['/courts', f.id]">
-            <div class="fac-art"><div class="mini-court"></div><span class="badge-rate">from {{ f.min_rate | peso }}/hr</span></div>
-            <div class="fac-body">
-              <h3>{{ f.name }}</h3>
-              <p class="muted">{{ f.address }}, {{ f.city }}</p>
-              <div class="fac-meta">
-                <span>{{ f.court_count }} courts</span>
-                <span>{{ f.open_hour | hour }} – {{ f.close_hour | hour }}</span>
-                @for (s of surfaces(f); track s) { <span class="cap">{{ s }}</span> }
+          <div class="col-12 col-md-6 col-lg-4">
+            <a class="card h-100 facility-card" [routerLink]="['/courts', f.id]">
+              <pb-court-art class="facility-art" />
+              <div class="card-body">
+                <h3 class="h6 mb-1">{{ f.name }}</h3>
+                <p class="small text-secondary mb-2"><i class="bi bi-geo-alt me-1"></i>{{ f.address }}, {{ f.city }}</p>
+                <div class="d-flex flex-wrap gap-3 small">
+                  <span><i class="bi bi-clock me-1 text-secondary"></i>{{ f.open_hour | hour }} – {{ f.close_hour | hour }}</span>
+                  <span><i class="bi bi-grid me-1 text-secondary"></i>{{ f.court_count }} {{ f.court_count == 1 ? 'court' : 'courts' }}</span>
+                </div>
               </div>
-            </div>
-          </a>
+              <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+                <span class="small text-secondary">From <b class="text-body">{{ f.min_rate | peso }}</b> / hour</span>
+                <span class="fw-bold text-primary small">Book <i class="bi bi-chevron-right"></i></span>
+              </div>
+            </a>
+          </div>
         }
       </div>
     </div>
@@ -177,76 +132,95 @@
 }
 
 <!-- ============ FOR COURT OWNERS ============ -->
-<section class="section owners" id="owners">
-  <div class="container owners-grid">
-    <div>
-      <span class="eyebrow light">For court owners</span>
-      <h2>Run your courts, not your inbox.</h2>
-      <p class="lead-light">Stop answering “available pa?” all day. PickleBook gives you one dashboard for schedules, reservations and GCash payments.</p>
-      <ul class="owner-points">
-        <li><b>Fewer repetitive messages</b><span>Players see rates and open slots before they ask.</span></li>
-        <li><b>No more double bookings</b><span>Slots lock the moment they are reserved.</span></li>
-        <li><b>Verify GCash in one tap</b><span>See the receipt and reference number, then confirm.</span></li>
-        <li><b>Know your peak hours</b><span>Booking reports show your busiest days and times.</span></li>
-      </ul>
-      <a routerLink="/register" [queryParams]="{ as: 'owner' }" class="btn btn-lime btn-lg">List your facility</a>
-    </div>
-
-    <div class="dash-mock">
-      <div class="dm-top"><span></span><span></span><span></span><b>Owner dashboard</b></div>
-      <div class="dm-stats">
-        <div><small>Today</small><b>14</b><em>bookings</em></div>
-        <div><small>To verify</small><b>3</b><em>GCash</em></div>
-        <div class="hl"><small>This month</small><b>₱48.6k</b><em>revenue</em></div>
+<section class="section bg-white" id="owners">
+  <div class="container">
+    <div class="row g-4 g-lg-5 align-items-center">
+      <div class="col-12 col-lg-6">
+        <div class="section-head">
+          <p class="kicker text-primary">For court owners</p>
+          <h2>Take bookings online instead of through chat.</h2>
+          <p>Players see your schedule and rates before they ask. You confirm payments and manage courts from one dashboard.</p>
+        </div>
+        <ul class="list-unstyled d-grid gap-3 mb-4">
+          <li class="d-flex gap-3"><div class="icon-tile"><i class="bi bi-chat-left-dots"></i></div><div><b>Fewer repeat questions</b><div class="text-secondary small">Availability, rates and hours are always visible.</div></div></li>
+          <li class="d-flex gap-3"><div class="icon-tile"><i class="bi bi-shield-check"></i></div><div><b>No double bookings</b><div class="text-secondary small">A slot can only be reserved once.</div></div></li>
+          <li class="d-flex gap-3"><div class="icon-tile"><i class="bi bi-receipt"></i></div><div><b>GCash receipts in one place</b><div class="text-secondary small">Check the receipt and reference number, then confirm.</div></div></li>
+          <li class="d-flex gap-3"><div class="icon-tile"><i class="bi bi-bar-chart"></i></div><div><b>Know your busy hours</b><div class="text-secondary small">Revenue and peak-hour reports for your facility.</div></div></li>
+        </ul>
+        <a routerLink="/register" [queryParams]="{ as: 'owner' }" class="btn btn-primary btn-lg">List your facility</a>
       </div>
-      <div class="dm-chart">
-        @for (h of [30, 45, 38, 60, 72, 95, 88]; track $index) { <i [style.height.%]="h"></i> }
+      <div class="col-12 col-lg-6">
+        <div class="card">
+          <div class="card-header">Getting listed</div>
+          <ol class="list-group list-group-flush list-group-numbered">
+            <li class="list-group-item d-flex gap-2 py-3"><div><b>Create an owner account</b><div class="small text-secondary">Add your facility name and address.</div></div></li>
+            <li class="list-group-item d-flex gap-2 py-3"><div><b>Set up your courts</b><div class="small text-secondary">Add each court, its hourly rate, your opening hours and your GCash QR.</div></div></li>
+            <li class="list-group-item d-flex gap-2 py-3"><div><b>Get approved</b><div class="small text-secondary">Our team reviews new facilities. Once approved, players can book.</div></div></li>
+          </ol>
+        </div>
       </div>
-      <div class="dm-row"><span class="badge for_verification">Verifying</span><b>Court 2 · 7–9 PM</b><button>Confirm</button></div>
-      <div class="dm-row"><span class="badge confirmed">Confirmed</span><b>Center Court · 6–7 PM</b><em>₱550</em></div>
     </div>
   </div>
 </section>
 
-<!-- ============ PRICING ============ -->
-<section class="section pricing" id="pricing">
+<!-- ============ PLANS ============ -->
+<section class="section" id="pricing">
   <div class="container">
-    <div class="center-head">
-      <span class="eyebrow">Pricing for facilities</span>
-      <h2>Simple monthly plans</h2>
-      <p class="muted">Players book for free. Facilities pay a small monthly subscription.</p>
+    <div class="section-head">
+      <h2>Plans for facilities</h2>
+      <p>Booking is free for players. Facilities pay a monthly subscription.</p>
     </div>
-    <div class="plans">
-      <div class="plan">
-        <h3>Starter</h3>
-        <div class="price">₱499<span>/month</span></div>
-        <ul><li>Up to 2 courts</li><li>Online booking page</li><li>GCash QR payments</li><li>Schedule &amp; slot blocking</li></ul>
-        <a routerLink="/register" [queryParams]="{ as: 'owner' }" class="btn btn-outline btn-block">Start with Starter</a>
-      </div>
-      <div class="plan popular">
-        <span class="ribbon">Most popular</span>
-        <h3>Pro</h3>
-        <div class="price">₱999<span>/month</span></div>
-        <ul><li>Up to 6 courts</li><li>Everything in Starter</li><li>Booking reports &amp; peak hours</li><li>Customer management</li></ul>
-        <a routerLink="/register" [queryParams]="{ as: 'owner' }" class="btn btn-lime btn-block">Go Pro</a>
-      </div>
-      <div class="plan">
-        <h3>Club</h3>
-        <div class="price">₱1,999<span>/month</span></div>
-        <ul><li>Unlimited courts</li><li>Everything in Pro</li><li>Promoted listing</li><li>Priority support</li></ul>
-        <a routerLink="/register" [queryParams]="{ as: 'owner' }" class="btn btn-outline btn-block">Choose Club</a>
-      </div>
+    <div class="row g-3 g-lg-4">
+      @for (p of plans; track p.id) {
+        <div class="col-12 col-md-4">
+          <div class="card h-100" [class.border-primary]="p.id === 'pro'">
+            <div class="card-body d-flex flex-column">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h3 class="h6 mb-0">{{ p.name }}</h3>
+                @if (p.id === 'pro') { <span class="badge bg-primary-subtle text-primary-emphasis">Most chosen</span> }
+              </div>
+              <div class="mb-1"><span class="price">{{ p.price | peso }}</span> <span class="text-secondary">/ month</span></div>
+              <p class="small text-secondary">{{ p.courts }}</p>
+              <ul class="list-unstyled d-grid gap-2 small mb-4">
+                @for (f of p.features; track f) { <li class="d-flex gap-2"><i class="bi bi-check-lg text-primary"></i>{{ f }}</li> }
+              </ul>
+              <a routerLink="/register" [queryParams]="{ as: 'owner' }" class="btn mt-auto" [class.btn-primary]="p.id === 'pro'" [class.btn-outline-primary]="p.id !== 'pro'">Choose {{ p.name }}</a>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="section bg-white" id="faq">
+  <div class="container" style="max-width: 760px">
+    <div class="section-head">
+      <h2>Questions and answers</h2>
+    </div>
+    <div class="accordion" id="faqList">
+      @for (q of faqs; track q.q; let i = $index) {
+        <div class="accordion-item">
+          <h3 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" [attr.data-bs-target]="'#faq' + i" aria-expanded="false" [attr.aria-controls]="'faq' + i">{{ q.q }}</button>
+          </h3>
+          <div [id]="'faq' + i" class="accordion-collapse collapse" data-bs-parent="#faqList">
+            <div class="accordion-body text-secondary">{{ q.a }}</div>
+          </div>
+        </div>
+      }
     </div>
   </div>
 </section>
 
 <!-- ============ CTA ============ -->
-<section class="cta-band">
-  <div class="container cta-inner">
-    <h2>Your next game is three taps away.</h2>
-    <div class="cta">
-      <a routerLink="/courts" class="btn btn-lime btn-lg">Book a court</a>
-      @if (!auth.isLoggedIn()) { <a routerLink="/register" class="btn btn-ghost-light btn-lg">Create free account</a> }
+<section class="bg-pine text-white py-5">
+  <div class="container d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+    <div>
+      <h2 class="h3 text-white mb-1">Ready to play?</h2>
+      <p class="mb-0 text-white-50">Find an open court near you.</p>
     </div>
+    <a routerLink="/courts" class="btn btn-lime btn-lg"><i class="bi bi-search me-2"></i>Find a court</a>
   </div>
 </section>

@@ -1,64 +1,65 @@
-import { Component, inject, input, output } from '@angular/core';
+import { Component, HostListener, inject, input, output } from '@angular/core';
 import { ApiService } from '../../core/api.service';
 import { Booking } from '../../core/models';
-import { HourPipe, NiceDatePipe, PesoPipe, StatusPipe } from '../../shared/pipes';
+import { HourPipe, NiceDatePipe, PesoPipe } from '../../shared/pipes';
+import { StatusBadge } from '../../shared/status-badge';
 
-/** Shows a booking's GCash receipt so the owner can confirm or reject it */
+/** Booking details with the player's GCash receipt, so the owner can confirm or reject it. */
 @Component({
   selector: 'pb-proof-modal',
   standalone: true,
-  imports: [PesoPipe, HourPipe, NiceDatePipe, StatusPipe],
+  imports: [PesoPipe, HourPipe, NiceDatePipe, StatusBadge],
   template: `
-    <div class="modal-backdrop" (click)="closed.emit()">
-      <div class="modal" (click)="$event.stopPropagation()">
-        <div class="modal-head">
-          <h3>Booking {{ booking().reference_code }}</h3>
-          <button class="icon-btn" (click)="closed.emit()" aria-label="Close">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="grid">
-            <div><small>Player</small><b>{{ booking().player_name }}</b><span>{{ booking().player_phone || booking().player_email }}</span></div>
-            <div><small>Status</small><span [class]="'badge ' + booking().status">{{ booking().status | status }}</span></div>
-            <div><small>Court</small><b>{{ booking().court_name }}</b></div>
-            <div><small>Schedule</small><b>{{ booking().booking_date | niceDate }}</b><span>{{ booking().start_hour | hour }} – {{ booking().end_hour | hour }}</span></div>
-            <div><small>Amount due</small><b class="amt">{{ booking().total_amount | peso }}</b></div>
-            <div><small>GCash ref no.</small><b class="mono">{{ booking().gcash_reference || '—' }}</b></div>
+    <div class="modal-backdrop show"></div>
+    <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="proofTitle" (click)="closed.emit()">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down" (click)="$event.stopPropagation()">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title h6" id="proofTitle">Booking {{ booking().reference_code }}</h2>
+            <button type="button" class="btn-close" aria-label="Close" (click)="closed.emit()"></button>
           </div>
-          @if (booking().payment_proof) {
-            <a [href]="api.asset(booking().payment_proof)" target="_blank" rel="noopener" class="proof">
-              <img [src]="api.asset(booking().payment_proof)" alt="GCash receipt" />
-              <span>Open full size ↗</span>
-            </a>
-          } @else {
-            <div class="alert info">No receipt uploaded yet.</div>
-          }
+          <div class="modal-body">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div>
+                <div class="fw-bold">{{ booking().player_name }}</div>
+                <div class="small text-secondary">{{ booking().player_phone || booking().player_email }}</div>
+              </div>
+              <pb-status [status]="booking().status" />
+            </div>
+            <div class="row g-2 small mb-3">
+              <div class="col-6"><div class="text-secondary">Court</div><div class="fw-semibold">{{ booking().court_name }}</div></div>
+              <div class="col-6"><div class="text-secondary">When</div><div class="fw-semibold">{{ booking().booking_date | niceDate }}<br>{{ booking().start_hour | hour }} – {{ booking().end_hour | hour }}</div></div>
+              <div class="col-6"><div class="text-secondary">Amount due</div><div class="fw-bold fs-5 tnum">{{ booking().total_amount | peso }}</div></div>
+              <div class="col-6"><div class="text-secondary">GCash ref no.</div><div class="fw-semibold tnum text-break">{{ booking().gcash_reference || '—' }}</div></div>
+            </div>
+            @if (booking().payment_proof) {
+              <a [href]="api.asset(booking().payment_proof)" target="_blank" rel="noopener" class="d-block border rounded overflow-hidden bg-body-tertiary">
+                <img [src]="api.asset(booking().payment_proof)" alt="GCash receipt" class="d-block mx-auto" style="max-height: 60vh; max-width: 100%">
+              </a>
+              <p class="small text-secondary mt-2 mb-0">Check that the amount, account name and reference number match your GCash history before confirming.</p>
+            } @else {
+              <div class="alert alert-light border small mb-0">No receipt uploaded yet. Confirm only if the player paid in person.</div>
+            }
+          </div>
           @if (booking().status === 'for_verification' || booking().status === 'pending_payment') {
-            <div class="acts">
+            <div class="modal-footer">
               @if (booking().status === 'for_verification') {
-                <button class="btn btn-danger" (click)="action.emit('rejected')">Reject payment</button>
+                <button type="button" class="btn btn-light border text-danger" (click)="action.emit('rejected')">Reject payment</button>
               }
-              <button class="btn btn-primary" (click)="action.emit('confirmed')">Confirm booking</button>
+              <button type="button" class="btn btn-primary" (click)="action.emit('confirmed')"><i class="bi bi-check-lg me-1"></i>{{ booking().status === 'pending_payment' ? 'Mark as paid' : 'Confirm booking' }}</button>
             </div>
           }
         </div>
       </div>
     </div>
   `,
-  styles: [`
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
-    .grid small { display: block; font-size: 11.5px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
-    .grid b { display: block; }
-    .grid span:not(.badge) { font-size: 13px; color: var(--muted); }
-    .amt { font-family: var(--font-display); color: var(--court); font-size: 20px; }
-    .proof { position: relative; display: block; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: var(--mint); }
-    .proof img { width: 100%; max-height: 420px; object-fit: contain; }
-    .proof span { position: absolute; right: 10px; bottom: 10px; padding: 4px 10px; border-radius: 999px; background: rgba(4,20,13,.7); color: #fff; font-size: 12px; font-weight: 700; }
-    .acts { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 18px; }
-  `],
 })
 export class ProofModal {
   api = inject(ApiService);
   booking = input.required<Booking>();
   closed = output<void>();
   action = output<'confirmed' | 'rejected'>();
+
+  @HostListener('document:keydown.escape')
+  onEscape() { this.closed.emit(); }
 }

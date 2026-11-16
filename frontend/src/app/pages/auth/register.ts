@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
@@ -9,93 +9,104 @@ import { ToastService } from '../../core/toast.service';
   selector: 'pb-register',
   standalone: true,
   imports: [FormsModule, RouterLink],
-  styleUrl: './auth.scss',
+  styleUrl: './auth-shell.scss',
   template: `
-    <div class="auth">
-      <aside class="visual">
-        <div class="court"></div>
-        <div class="ball"></div>
-        <div class="visual-copy">
-          <span class="eyebrow" style="color: var(--lime)">Join PickleBook</span>
+    <div class="auth-wrap">
+      <aside class="auth-side">
+        <div>
           @if (role() === 'owner') {
-            <h2>Fill your courts. <em>Empty your inbox.</em></h2>
-            <p>List your facility, upload your GCash QR and start accepting online bookings. A super admin reviews new facilities before they go live.</p>
+            <h2>Take bookings online, not through chat.</h2>
+            <p class="mt-3 mb-0">List your facility, add your courts and GCash QR, and start accepting reservations once you're approved.</p>
           } @else {
-            <h2>Less messaging. <em>More playing.</em></h2>
-            <p>Create a free player account to book courts, pay with GCash and track all your reservations in one place.</p>
+            <h2>Book courts without the back-and-forth.</h2>
+            <p class="mt-3 mb-0">A free account lets you reserve courts, pay with GCash and keep all your bookings in one place.</p>
           }
         </div>
-        <div class="quote">“Players see our schedule before they message us. Halos wala na kaming double booking.”<b>— Mark, facility manager</b></div>
+        <p class="small mb-0">Already have an account? <a class="link-light" routerLink="/login">Log in</a></p>
       </aside>
 
-      <section class="panel">
-        <form class="form-card rise" (ngSubmit)="submit()" novalidate>
-          <h1>Create account</h1>
-          <p class="sub">Already have one? <a routerLink="/login">Log in</a></p>
+      <section class="auth-main">
+        <form class="auth-card" (ngSubmit)="submit()" novalidate>
+          <h1>Create your account</h1>
+          <p class="text-secondary mb-4">Already registered? <a routerLink="/login">Log in</a></p>
 
-          <div class="roles" role="radiogroup" aria-label="Account type">
-            <button type="button" class="role" [class.active]="role() === 'player'" (click)="role.set('player')" role="radio" [attr.aria-checked]="role() === 'player'">
-              <span class="ico">🏓</span><b>Player</b><span>Book and play</span>
-            </button>
-            <button type="button" class="role" [class.active]="role() === 'owner'" (click)="role.set('owner')" role="radio" [attr.aria-checked]="role() === 'owner'">
-              <span class="ico">⌂</span><b>Court owner</b><span>List my facility</span>
-            </button>
-          </div>
+          <fieldset class="mb-4">
+            <legend class="form-label">I want to</legend>
+            <div class="row g-2">
+              <label class="col-6 role-option">
+                <input type="radio" name="role" value="player" [checked]="role() === 'player'" (change)="role.set('player')">
+                <div class="card h-100"><div class="card-body p-3">
+                  <i class="bi bi-calendar2-check fs-4 text-secondary"></i>
+                  <div class="fw-bold mt-1">Book courts</div>
+                  <div class="small text-secondary">Player account</div>
+                </div></div>
+              </label>
+              <label class="col-6 role-option">
+                <input type="radio" name="role" value="owner" [checked]="role() === 'owner'" (change)="role.set('owner')">
+                <div class="card h-100"><div class="card-body p-3">
+                  <i class="bi bi-shop fs-4 text-secondary"></i>
+                  <div class="fw-bold mt-1">List my courts</div>
+                  <div class="small text-secondary">Court owner</div>
+                </div></div>
+              </label>
+            </div>
+          </fieldset>
 
-          <div class="field">
-            <label for="name">Full name</label>
-            <input id="name" class="input" name="full_name" [(ngModel)]="form.full_name" required placeholder="Juan Dela Cruz" autocomplete="name">
+          @if (error()) {
+            <div class="alert alert-danger d-flex gap-2 py-2" role="alert"><i class="bi bi-exclamation-circle mt-1"></i><div>{{ error() }}</div></div>
+          }
+
+          <div class="mb-3">
+            <label class="form-label" for="name">Full name</label>
+            <input id="name" class="form-control" name="full_name" [(ngModel)]="form.full_name" autocomplete="name" required>
           </div>
-          <div class="form-row cols-2">
-            <div class="field">
-              <label for="email">Email</label>
-              <input id="email" class="input" type="email" name="email" [(ngModel)]="form.email" required placeholder="you@email.com" autocomplete="email">
-            </div>
-            <div class="field">
-              <label for="phone">Mobile number</label>
-              <input id="phone" class="input" name="phone" [(ngModel)]="form.phone" placeholder="09XX XXX XXXX" autocomplete="tel" inputmode="tel">
-            </div>
+          <div class="mb-3">
+            <label class="form-label" for="email">Email</label>
+            <input id="email" class="form-control" type="email" name="email" [(ngModel)]="form.email" autocomplete="email" inputmode="email" required>
           </div>
-          <div class="field">
-            <label for="pw">Password</label>
-            <div class="pw-wrap">
-              <input id="pw" class="input" [type]="showPw() ? 'text' : 'password'" name="password" [(ngModel)]="form.password" (ngModelChange)="pw.set($event)" required placeholder="At least 8 characters" autocomplete="new-password">
-              <button type="button" class="pw-toggle" (click)="showPw.set(!showPw())">{{ showPw() ? 'Hide' : 'Show' }}</button>
+          <div class="mb-3">
+            <label class="form-label" for="phone">Mobile number</label>
+            <input id="phone" class="form-control" name="phone" [(ngModel)]="form.phone" autocomplete="tel" inputmode="tel" placeholder="09XX XXX XXXX">
+            <div class="form-text">Facilities use this to reach you about your booking.</div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label" for="pw">Password</label>
+            <div class="input-group">
+              <input id="pw" class="form-control" [type]="showPw() ? 'text' : 'password'" name="password" [(ngModel)]="form.password" autocomplete="new-password" required minlength="8">
+              <button type="button" class="btn btn-light border" (click)="showPw.set(!showPw())" [attr.aria-label]="showPw() ? 'Hide password' : 'Show password'">
+                <i [class]="showPw() ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+              </button>
             </div>
-            <div class="strength"><i [style.width.%]="strength().pct" [style.background]="strength().color"></i></div>
-            <span class="hint">{{ strength().label }}</span>
+            <div class="form-text">At least 8 characters.</div>
           </div>
 
           @if (role() === 'owner') {
-            <div class="owner-fields">
-              <h4>Your facility</h4>
-              <div class="field">
-                <label for="fname">Facility name</label>
-                <input id="fname" class="input" name="facility_name" [(ngModel)]="form.facility_name" placeholder="e.g. Dink Yard Cebu">
-              </div>
-              <div class="form-row cols-2">
-                <div class="field">
-                  <label for="faddr">Address</label>
-                  <input id="faddr" class="input" name="facility_address" [(ngModel)]="form.facility_address" placeholder="Street, barangay">
+            <div class="card bg-body-tertiary border-0 mb-4">
+              <div class="card-body">
+                <div class="fw-bold mb-3"><i class="bi bi-shop me-2"></i>Your facility</div>
+                <div class="mb-3">
+                  <label class="form-label" for="fname">Facility name</label>
+                  <input id="fname" class="form-control" name="facility_name" [(ngModel)]="form.facility_name">
                 </div>
-                <div class="field">
-                  <label for="fcity">City</label>
-                  <select id="fcity" class="select" name="facility_city" [(ngModel)]="form.facility_city">
+                <div class="mb-3">
+                  <label class="form-label" for="faddr">Street address</label>
+                  <input id="faddr" class="form-control" name="facility_address" [(ngModel)]="form.facility_address" autocomplete="street-address">
+                </div>
+                <div>
+                  <label class="form-label" for="fcity">City</label>
+                  <select id="fcity" class="form-select" name="facility_city" [(ngModel)]="form.facility_city">
                     @for (c of cities; track c) { <option [value]="c">{{ c }}</option> }
                   </select>
                 </div>
+                <p class="small text-secondary mt-3 mb-0">You'll add courts, rates and your GCash QR after signing up. Your facility goes live once our team approves it.</p>
               </div>
-              <span class="hint">You can add courts, opening hours and your GCash QR after signing up.</span>
             </div>
           }
 
-          <p class="terms">By creating an account you agree to PickleBook's terms and privacy policy.</p>
-          @if (error()) { <p class="error-text" style="margin-bottom: 14px">{{ error() }}</p> }
-
-          <button class="btn btn-primary btn-lg btn-block" [disabled]="loading()">
-            @if (loading()) { <span class="spinner"></span> }
-            {{ role() === 'owner' ? 'Create owner account' : 'Create player account' }}
+          <button class="btn btn-primary btn-lg w-100" [disabled]="loading()">
+            @if (loading()) { <span class="spinner-border" aria-hidden="true"></span> } Create account
           </button>
+          <p class="small text-secondary text-center mt-3 mb-0">By signing up you agree to the PickleBook terms and privacy policy.</p>
         </form>
       </section>
     </div>
@@ -110,46 +121,26 @@ export class RegisterPage {
   cities = ['Cebu City', 'Mandaue City', 'Lapu-Lapu City', 'Talisay City', 'Consolacion', 'Liloan', 'Minglanilla'];
   role = signal<'player' | 'owner'>(this.route.snapshot.queryParamMap.get('as') === 'owner' ? 'owner' : 'player');
   form = { full_name: '', email: '', phone: '', password: '', facility_name: '', facility_address: '', facility_city: 'Cebu City' };
-  pw = signal('');
   showPw = signal(false);
   loading = signal(false);
   error = signal('');
 
-  strength = computed(() => {
-    const p = this.pw();
-    let score = 0;
-    if (p.length >= 8) score++;
-    if (/[A-Z]/.test(p) && /[a-z]/.test(p)) score++;
-    if (/\d/.test(p)) score++;
-    if (/[^A-Za-z0-9]/.test(p)) score++;
-    const map = [
-      { label: 'Use at least 8 characters', color: '#dc2626' },
-      { label: 'Weak', color: '#f97316' },
-      { label: 'Okay', color: '#eab308' },
-      { label: 'Strong', color: '#22c55e' },
-      { label: 'Very strong', color: '#15803d' },
-    ];
-    return { ...map[p.length < 8 ? 0 : score], pct: p ? Math.max(10, score * 25) : 0 };
-  });
-
   submit() {
     this.error.set('');
     const f = this.form;
-    if (!f.full_name.trim() || !f.email.trim() || !f.password) return this.error.set('Please fill in your name, email and password.');
-    if (!/^\S+@\S+\.\S+$/.test(f.email)) return this.error.set('Please enter a valid email.');
-    if (f.password.length < 8) return this.error.set('Password must be at least 8 characters.');
-    if (this.role() === 'owner' && (!f.facility_name.trim() || !f.facility_address.trim()))
-      return this.error.set('Please enter your facility name and address.');
+    if (!f.full_name.trim() || !f.email.trim() || !f.password) { this.error.set('Fill in your name, email and password.'); return; }
+    if (!/^\S+@\S+\.\S+$/.test(f.email.trim())) { this.error.set('Enter a valid email address.'); return; }
+    if (f.phone && !/^(\+?63|0)9\d{2}[\s-]?\d{3}[\s-]?\d{4}$/.test(f.phone.trim())) { this.error.set('Enter a valid PH mobile number, for example 0917 123 4567.'); return; }
+    if (f.password.length < 8) { this.error.set('Your password needs at least 8 characters.'); return; }
+    if (this.role() === 'owner' && (!f.facility_name.trim() || !f.facility_address.trim())) { this.error.set('Enter your facility name and address.'); return; }
 
     this.loading.set(true);
-    this.auth.register({ ...f, role: this.role() }).subscribe({
+    this.auth.register({ ...f, email: f.email.trim(), role: this.role() }).subscribe({
       next: (r) => {
         this.loading.set(false);
-        this.toast.success(r.user.role === 'owner'
-          ? 'Account created! Your facility is waiting for admin approval.'
-          : `Welcome to PickleBook, ${r.user.full_name.split(' ')[0]}!`);
+        this.toast.success(r.user.role === 'owner' ? 'Account created. Set up your courts while we review your facility.' : 'Account created');
         const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-        this.router.navigateByUrl(returnUrl || this.auth.homeFor(r.user.role));
+        this.router.navigateByUrl(returnUrl || (r.user.role === 'owner' ? '/owner/facility' : '/courts'));
       },
       error: (e) => { this.loading.set(false); this.error.set(errMsg(e)); },
     });

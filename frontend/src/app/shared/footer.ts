@@ -7,47 +7,40 @@ import { Logo } from './logo';
   standalone: true,
   imports: [RouterLink, Logo],
   template: `
-    <footer>
-      <div class="container grid">
-        <div class="about">
-          <pb-logo />
-          <p>An online booking and management system for pickleball courts. Built for local courts and the players who love them.</p>
+    <footer class="bg-pine text-white-50 pt-5 pb-4">
+      <div class="container">
+        <div class="row gy-4">
+          <div class="col-12 col-lg-5">
+            <pb-logo [onDark]="true" [height]="28" />
+            <p class="mt-3 mb-0 small" style="max-width: 22rem">Online booking and management for pickleball courts in Cebu.</p>
+          </div>
+          <div class="col-6 col-lg-2">
+            <h2 class="foot-h">Players</h2>
+            <a routerLink="/courts">Find a court</a>
+            <a routerLink="/my-bookings">My bookings</a>
+            <a routerLink="/register">Create account</a>
+          </div>
+          <div class="col-6 col-lg-2">
+            <h2 class="foot-h">Court owners</h2>
+            <a routerLink="/register" [queryParams]="{ as: 'owner' }">List your facility</a>
+            <a routerLink="/" fragment="pricing">Plans</a>
+            <a routerLink="/owner">Dashboard</a>
+          </div>
+          <div class="col-12 col-lg-3">
+            <h2 class="foot-h">Help</h2>
+            <a routerLink="/" fragment="faq">Questions and answers</a>
+            <a routerLink="/" fragment="how">How booking works</a>
+          </div>
         </div>
-        <div>
-          <h4>Players</h4>
-          <a routerLink="/courts">Find a court</a>
-          <a routerLink="/register">Create account</a>
-          <a routerLink="/my-bookings">My bookings</a>
-        </div>
-        <div>
-          <h4>Court owners</h4>
-          <a routerLink="/register" [queryParams]="{ as: 'owner' }">List your facility</a>
-          <a routerLink="/" fragment="pricing">Pricing</a>
-          <a routerLink="/owner">Owner dashboard</a>
-        </div>
-        <div>
-          <h4>Team</h4>
-          <span>PickleBook · IT-FRELEAN</span>
-          <span>Cebu, Philippines</span>
-        </div>
-      </div>
-      <div class="container bottom">
-        <span>© {{ year }} PickleBook. All rights reserved.</span>
-        <span>Play more. Message less.</span>
+        <hr class="border-light opacity-25 my-4">
+        <p class="small mb-0">© {{ year }} PickleBook · Team IT-FRELEAN</p>
       </div>
     </footer>
   `,
   styles: [`
-    footer { background: var(--night); color: rgba(255,255,255,.66); padding: 56px 0 24px; font-size: 14px; }
-    .grid { display: grid; gap: 32px; grid-template-columns: 1fr 1fr; }
-    .about { grid-column: 1 / -1; }
-    .about p { margin-top: 14px; max-width: 360px; }
-    h4 { font-family: var(--font-body); font-size: 12px; text-transform: uppercase; letter-spacing: .14em; color: #fff; margin-bottom: 14px; }
-    a, span { display: block; padding: 4px 0; }
-    a:hover { color: var(--lime); }
-    .bottom { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,.08); font-size: 13px; }
-    .bottom span { padding: 0; }
-    @media (min-width: 860px) { .grid { grid-template-columns: 2fr 1fr 1fr 1fr; } .about { grid-column: auto; } }
+    .foot-h { font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; margin-bottom: 0.75rem; }
+    a { display: block; padding: 0.2rem 0; color: rgba(255, 255, 255, 0.72); font-size: 0.9375rem; text-decoration: none; }
+    a:hover { color: var(--pb-lime); }
   `],
 })
 export class Footer {

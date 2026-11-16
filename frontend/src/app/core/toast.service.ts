@@ -9,7 +9,7 @@ export class ToastService {
 
   show(text: string, type: Toast['type'] = 'info', ms = 3500) {
     const t = { id: ++this.id, type, text };
-    this.toasts.update((list) => [...list, t]);
+    this.toasts.update((list) => [...list.slice(-2), t]);
     setTimeout(() => this.dismiss(t.id), ms);
   }
   success(text: string) { this.show(text, 'success'); }

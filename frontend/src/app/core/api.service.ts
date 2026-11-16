@@ -28,6 +28,8 @@ export class ApiService {
   login(body: { email: string; password: string }) { return this.http.post<{ token: string; user: User }>(`${this.base}/auth/login`, body); }
   register(body: any) { return this.http.post<{ token: string; user: User }>(`${this.base}/auth/register`, body); }
   me() { return this.http.get<{ user: User }>(`${this.base}/auth/me`); }
+  updateProfile(body: { full_name: string; phone?: string }) { return this.http.put<{ user: User }>(`${this.base}/auth/me`, body); }
+  changePassword(body: { current_password: string; new_password: string }) { return this.http.put<Msg>(`${this.base}/auth/password`, body); }
 
   // ---------- Public ----------
   facilities(q = '', city = '') { return this.http.get<Facility[]>(`${this.base}/facilities`, { params: this.params({ q, city }) }); }
@@ -89,6 +91,7 @@ export class ApiService {
 
 /** Reads the error message sent by the backend */
 export function errMsg(e: any, fallback = 'Something went wrong. Please try again.'): string {
-  if (e?.status === 0) return 'Cannot reach the server. Is the backend running on port 3000?';
+  if (e?.status === 0) return 'We could not reach the server. Check your connection and try again.';
+  if (e?.status === 429) return 'Too many attempts. Please wait a minute and try again.';
   return e?.error?.message || fallback;
 }

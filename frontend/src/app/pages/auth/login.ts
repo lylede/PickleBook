@@ -4,56 +4,66 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { errMsg } from '../../core/api.service';
 import { ToastService } from '../../core/toast.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'pb-login',
   standalone: true,
   imports: [FormsModule, RouterLink],
-  styleUrl: './auth.scss',
+  styleUrl: './auth-shell.scss',
   template: `
-    <div class="auth">
-      <aside class="visual">
-        <div class="court"></div>
-        <div class="ball"></div>
-        <div class="visual-copy">
-          <span class="eyebrow" style="color: var(--lime)">Welcome back</span>
-          <h2>Your court is <em>waiting.</em></h2>
-          <p>Log in to book a slot, check your reservations or manage your facility.</p>
+    <div class="auth-wrap">
+      <aside class="auth-side">
+        <div>
+          <h2>Your next game is a few taps away.</h2>
+          <p class="mt-3 mb-0">Log in to book a court, check your reservations or manage your facility.</p>
         </div>
-        <div class="quote">“Dati, ilang oras ako naghihintay ng reply. Ngayon, 20 seconds lang naka-book na kami.”<b>— Miguel, recreational player</b></div>
+        <ul class="list-unstyled d-grid gap-3 mb-0">
+          <li class="d-flex gap-3"><i class="bi bi-lightning-charge text-warning fs-5"></i><span>Live availability for every court</span></li>
+          <li class="d-flex gap-3"><i class="bi bi-qr-code-scan text-warning fs-5"></i><span>Pay with the facility's GCash QR</span></li>
+          <li class="d-flex gap-3"><i class="bi bi-bell text-warning fs-5"></i><span>Track your booking status</span></li>
+        </ul>
       </aside>
 
-      <section class="panel">
-        <form class="form-card rise" (ngSubmit)="submit()" #f="ngForm" novalidate>
+      <section class="auth-main">
+        <form class="auth-card" (ngSubmit)="submit()" novalidate>
           <h1>Log in</h1>
-          <p class="sub">New to PickleBook? <a routerLink="/register" [queryParams]="{ returnUrl: returnUrl }">Create an account</a></p>
+          <p class="text-secondary mb-4">New here? <a routerLink="/register" [queryParams]="returnUrl ? { returnUrl } : {}">Create an account</a></p>
 
-          <div class="field">
-            <label for="email">Email</label>
-            <input id="email" class="input" type="email" name="email" [(ngModel)]="email" required autocomplete="email" placeholder="you@email.com">
+          @if (error()) {
+            <div class="alert alert-danger d-flex gap-2 py-2" role="alert"><i class="bi bi-exclamation-circle mt-1"></i><div>{{ error() }}</div></div>
+          }
+
+          <div class="mb-3">
+            <label class="form-label" for="email">Email</label>
+            <input id="email" class="form-control" type="email" name="email" [(ngModel)]="email" autocomplete="email" inputmode="email" required>
           </div>
-          <div class="field">
-            <label for="password">Password</label>
-            <div class="pw-wrap">
-              <input id="password" class="input" [type]="showPw() ? 'text' : 'password'" name="password" [(ngModel)]="password" required autocomplete="current-password" placeholder="••••••••">
-              <button type="button" class="pw-toggle" (click)="showPw.set(!showPw())">{{ showPw() ? 'Hide' : 'Show' }}</button>
+          <div class="mb-4">
+            <label class="form-label" for="password">Password</label>
+            <div class="input-group">
+              <input id="password" class="form-control" [type]="showPw() ? 'text' : 'password'" name="password" [(ngModel)]="password" autocomplete="current-password" required>
+              <button type="button" class="btn btn-light border" (click)="showPw.set(!showPw())" [attr.aria-label]="showPw() ? 'Hide password' : 'Show password'">
+                <i [class]="showPw() ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+              </button>
             </div>
           </div>
 
-          @if (error()) { <p class="error-text" style="margin-bottom: 14px">{{ error() }}</p> }
-
-          <button class="btn btn-primary btn-lg btn-block" [disabled]="loading()">
-            @if (loading()) { <span class="spinner"></span> } Log in
+          <button class="btn btn-primary btn-lg w-100" [disabled]="loading()">
+            @if (loading()) { <span class="spinner-border" aria-hidden="true"></span> } Log in
           </button>
 
-          <div class="demo">
-            <b>Demo accounts</b> (after running <code>npm run db:setup</code>)
-            <div class="demo-btns">
-              <button type="button" class="btn btn-outline btn-sm" (click)="fill('player@picklebook.ph', 'Player@123')">Player</button>
-              <button type="button" class="btn btn-outline btn-sm" (click)="fill('owner@picklebook.ph', 'Owner@123')">Court owner</button>
-              <button type="button" class="btn btn-outline btn-sm" (click)="fill('admin@picklebook.ph', 'Admin@123')">Super admin</button>
+          @if (showDemo) {
+            <div class="card bg-body-tertiary border-0 mt-4">
+              <div class="card-body py-3">
+                <div class="small fw-semibold mb-2"><i class="bi bi-info-circle me-1"></i>Demo accounts (development only)</div>
+                <div class="d-flex flex-wrap gap-2">
+                  <button type="button" class="btn btn-light btn-sm border" (click)="fill('player@picklebook.ph', 'Player@123')">Player</button>
+                  <button type="button" class="btn btn-light btn-sm border" (click)="fill('owner@picklebook.ph', 'Owner@123')">Court owner</button>
+                  <button type="button" class="btn btn-light btn-sm border" (click)="fill('admin@picklebook.ph', 'Admin@123')">Admin</button>
+                </div>
+              </div>
             </div>
-          </div>
+          }
         </form>
       </section>
     </div>
@@ -64,6 +74,7 @@ export class LoginPage {
   private router = inject(Router);
   private toast = inject(ToastService);
   returnUrl = inject(ActivatedRoute).snapshot.queryParamMap.get('returnUrl') || '';
+  showDemo = environment.showDemoAccounts;
 
   email = '';
   password = '';
@@ -75,12 +86,12 @@ export class LoginPage {
 
   submit() {
     this.error.set('');
-    if (!this.email || !this.password) { this.error.set('Enter your email and password.'); return; }
+    if (!this.email.trim() || !this.password) { this.error.set('Enter your email and password.'); return; }
     this.loading.set(true);
-    this.auth.login(this.email, this.password).subscribe({
+    this.auth.login(this.email.trim(), this.password).subscribe({
       next: (r) => {
         this.loading.set(false);
-        this.toast.success(`Welcome back, ${r.user.full_name.split(' ')[0]}!`);
+        this.toast.success(`Welcome back, ${r.user.full_name.split(' ')[0]}`);
         this.router.navigateByUrl(this.returnUrl || this.auth.homeFor(r.user.role));
       },
       error: (e) => { this.loading.set(false); this.error.set(errMsg(e)); },

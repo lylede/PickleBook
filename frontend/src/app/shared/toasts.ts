@@ -5,22 +5,24 @@ import { ToastService } from '../core/toast.service';
   selector: 'pb-toasts',
   standalone: true,
   template: `
-    <div class="toasts" aria-live="polite">
+    <div class="toast-area" aria-live="polite" aria-atomic="true">
       @for (t of toast.toasts(); track t.id) {
-        <div class="toast" [class]="'toast ' + t.type" (click)="toast.dismiss(t.id)">
-          <span class="dot">{{ t.type === 'success' ? '✓' : t.type === 'error' ? '!' : 'i' }}</span>
-          <span>{{ t.text }}</span>
+        <div class="toast show align-items-center border-0 w-100" [class.text-bg-dark]="t.type !== 'error'" [class.text-bg-danger]="t.type === 'error'" role="status">
+          <div class="d-flex">
+            <div class="toast-body d-flex align-items-center gap-2 fw-semibold">
+              <i [class]="'bi ' + (t.type === 'success' ? 'bi-check-circle-fill' : t.type === 'error' ? 'bi-exclamation-circle-fill' : 'bi-info-circle-fill')"></i>
+              <span>{{ t.text }}</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" aria-label="Dismiss" (click)="toast.dismiss(t.id)"></button>
+          </div>
         </div>
       }
     </div>
   `,
   styles: [`
-    .toasts { position: fixed; z-index: 300; left: 50%; bottom: 20px; transform: translateX(-50%); display: grid; gap: 10px; width: min(420px, calc(100% - 32px)); }
-    .toast { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; background: var(--ink); color: #fff; font-weight: 600; font-size: 14px; box-shadow: var(--shadow-lg); animation: pop .35s var(--ease); cursor: pointer; }
-    .dot { width: 24px; height: 24px; flex: none; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 13px; background: rgba(255,255,255,.14); }
-    .success .dot { background: var(--lime); color: var(--ink); }
-    .error { background: #7f1d1d; }
-    .error .dot { background: #fecaca; color: #7f1d1d; }
+    .toast-area { position: fixed; z-index: 1090; left: 50%; transform: translateX(-50%); width: min(420px, calc(100% - 24px));
+      bottom: calc(var(--pb-tabbar-h) + 12px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 8px; }
+    @media (min-width: 992px) { .toast-area { left: auto; right: 24px; bottom: 24px; transform: none; } }
   `],
 })
 export class Toasts {

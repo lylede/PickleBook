@@ -111,6 +111,11 @@ router.post('/facilities/:id/courts', asyncHandler(async (req, res) => {
   if (!f) return res.status(404).json({ message: 'Facility not found.' });
   const { name, surface = 'outdoor', hourly_rate } = req.body;
   if (!name || !(Number(hourly_rate) > 0)) return res.status(400).json({ message: 'Court name and hourly rate are required.' });
+  if (!['indoor', 'outdoor', 'covered'].includes(surface)) return res.status(400).json({ message: 'Invalid court type.' });
+  const plan = require('../config/plans')[f.plan] || require('../config/plans').starter;
+  const [[{ n }]] = await pool.query('SELECT COUNT(*) AS n FROM courts WHERE facility_id = ?', [f.id]);
+  if (n >= plan.maxCourts)
+    return res.status(400).json({ message: `Your ${plan.name} plan allows up to ${plan.maxCourts} courts. Contact PickleBook to upgrade.` });
   const [r] = await pool.query('INSERT INTO courts (facility_id,name,surface,hourly_rate) VALUES (?,?,?,?)',
     [f.id, name, surface, hourly_rate]);
   res.status(201).json({ id: r.insertId, message: 'Court added.' });
