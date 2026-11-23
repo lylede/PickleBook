@@ -118,7 +118,7 @@ export class RegisterPage {
   private toast = inject(ToastService);
   private route = inject(ActivatedRoute);
 
-  cities = ['Cebu City', 'Mandaue City', 'Lapu-Lapu City', 'Talisay City', 'Consolacion', 'Liloan', 'Minglanilla'];
+  cities = ['Cebu City', 'Mandaue City', 'Lapu-Lapu City', 'Talisay City', 'Consolacion', 'Liloan', 'Minglanilla', 'Catmon'];
   role = signal<'player' | 'owner'>(this.route.snapshot.queryParamMap.get('as') === 'owner' ? 'owner' : 'player');
   form = { full_name: '', email: '', phone: '', password: '', facility_name: '', facility_address: '', facility_city: 'Cebu City' };
   showPw = signal(false);

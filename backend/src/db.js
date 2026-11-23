@@ -9,6 +9,7 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   dateStrings: true, // keep DATE columns as 'YYYY-MM-DD'
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
 });
 
 module.exports = pool;

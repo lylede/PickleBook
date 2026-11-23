@@ -14,6 +14,7 @@ async function main() {
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     multipleStatements: true,
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
   });
 
   await conn.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);

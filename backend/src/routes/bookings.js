@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const pool = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
-const { imageUpload } = require('../utils/upload');
+const { imageUpload, storedUrl } = require('../utils/upload');
 const { asyncHandler, makeReference, isValidDate, todayPH, currentHourPH } = require('../utils/helpers');
 const { hasConflict, HOLD_MINUTES } = require('../utils/slots');
 
@@ -121,7 +121,7 @@ router.post('/:id/payment', requireRole('player'), imageUpload('proofs').single(
 
   await pool.query(
     "UPDATE bookings SET status='for_verification', gcash_reference=?, payment_proof=? WHERE id=?",
-    [gcash_reference.replace(/\s/g, ''), `/uploads/proofs/${req.file.filename}`, b.id]);
+    [gcash_reference.replace(/\s/g, ''), storedUrl(req.file, 'proofs'), b.id]);
   res.json({ message: 'Payment submitted! The court owner will verify it shortly.' });
 }));
 

@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const pool = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
-const { imageUpload } = require('../utils/upload');
+const { imageUpload, storedUrl } = require('../utils/upload');
 const { asyncHandler } = require('../utils/helpers');
 
 router.use(requireAuth, requireRole('admin'));
@@ -98,7 +98,7 @@ router.put('/settings', asyncHandler(async (req, res) => {
 
 router.post('/settings/qr', imageUpload('qr').single('qr'), asyncHandler(async (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'Upload a QR image.' });
-  const url = `/uploads/qr/${req.file.filename}`;
+  const url = storedUrl(req.file, 'qr');
   await pool.query(
     "INSERT INTO settings VALUES ('platform_gcash_qr',?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)", [url]);
   res.json({ platform_gcash_qr: url, message: 'Platform GCash QR saved.' });

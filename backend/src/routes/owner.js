@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const pool = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
-const { imageUpload } = require('../utils/upload');
+const { imageUpload, storedUrl } = require('../utils/upload');
 const { asyncHandler, isValidDate, todayPH } = require('../utils/helpers');
 
 router.use(requireAuth, requireRole('owner'));
@@ -93,7 +93,7 @@ router.post('/facilities/:id/qr', imageUpload('qr').single('qr'), asyncHandler(a
   const f = await ownFacility(req.user.id, req.params.id);
   if (!f) return res.status(404).json({ message: 'Facility not found.' });
   if (!req.file) return res.status(400).json({ message: 'Upload your GCash QR image.' });
-  const url = `/uploads/qr/${req.file.filename}`;
+  const url = storedUrl(req.file, 'qr');
   await pool.query('UPDATE facilities SET gcash_qr=? WHERE id=?', [url, f.id]);
   res.json({ gcash_qr: url, message: 'GCash QR saved.' });
 }));
